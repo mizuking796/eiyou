@@ -828,6 +828,16 @@ document.getElementById('resetAllBtn').addEventListener('click', () => {
   renderAll();
 });
 
+document.getElementById('factoryResetBtn').addEventListener('click', () => {
+  if (!confirm('全データ・設定・APIキーを含め初期状態に戻します。よろしいですか？')) return;
+  localStorage.removeItem('eiyou_meals');
+  localStorage.removeItem('eiyou_profile');
+  localStorage.removeItem('eiyou_apikey');
+  localStorage.removeItem('eiyou_model');
+  showToast('初期状態に戻しました', 'info');
+  renderAll();
+});
+
 // ============================================================
 // RENDER ALL
 // ============================================================
