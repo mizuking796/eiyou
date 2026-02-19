@@ -92,7 +92,7 @@ const profileWeight = document.getElementById('profileWeight');
 
 settingsBtn.addEventListener('click', () => {
   apiKeyInput.value = localStorage.getItem('eiyou_apikey') || '';
-  document.getElementById('modelSelect').value = localStorage.getItem('eiyou_model') || 'gemini-1.5-flash';
+  document.getElementById('modelSelect').value = localStorage.getItem('eiyou_model') || 'gemini-2.5-flash';
   const p = loadProfile();
   profileAge.value = p.age;
   profileSex.value = p.sex;

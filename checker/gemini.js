@@ -19,14 +19,11 @@ async function callGemini(prompt, imageBase64) {
   }
   parts.push({text: prompt});
 
-  // モデル名と適切なAPIバージョンを選択
-  const model = localStorage.getItem('eiyou_model') || 'gemini-1.5-flash';
-  const apiVer = model.startsWith('gemini-1.') ? 'v1' : 'v1beta';
-  const url = `https://generativelanguage.googleapis.com/${apiVer}/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  // モデル名（設定から取得）
+  const model = localStorage.getItem('eiyou_model') || 'gemini-2.5-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-  // v1beta(2.0系)はresponseMimeType対応、v1(1.5系)は非対応
-  const genConfig = {temperature:0.2};
-  if (apiVer === 'v1beta') genConfig.responseMimeType = 'application/json';
+  const genConfig = {temperature:0.2, responseMimeType:'application/json'};
 
   const resp = await fetch(url, {
     method: 'POST',
