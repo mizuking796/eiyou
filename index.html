@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>栄養素データベース | Nutrition Database</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.4/cytoscape.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.4/cytoscape.min.js" integrity="sha512-xpXUCbrkyJCwC5noJXZqec9rSXdRgFfDoL7Q9/pCPe54Y04OlqwPobMcNuA5NPJ7DRR51OIr6xcOH2wUspyKDQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:#f8f9fa;color:#333;height:100vh;display:flex;flex-direction:column;overflow:hidden}
@@ -71,7 +71,7 @@ header h1 span{color:#888;font-weight:400;font-size:12px;margin-left:4px}
 .food-item:last-child{border-bottom:none}
 .food-name{color:#333}
 .food-amount{color:#999;font-size:11px}
-.relation-item{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;cursor:pointer;border-radius:4px;padding:4px 6px}
+.relation-item{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;border-radius:4px;padding:4px 6px}
 .relation-item:hover{background:#f0f7ff}
 .relation-type{font-size:10px;padding:1px 6px;border-radius:8px;color:#fff;flex-shrink:0}
 .relation-type.synergy{background:#4caf50}
@@ -88,7 +88,8 @@ header h1 span{color:#888;font-weight:400;font-size:12px;margin-left:4px}
 .evidence-note{font-size:10px;color:#999;line-height:1.4;margin-top:6px;padding-top:6px;border-top:1px solid #eee}
 .disclaimer{position:absolute;bottom:12px;right:12px;background:rgba(255,255,255,.92);border-radius:8px;padding:6px 10px;font-size:10px;color:#999;box-shadow:0 1px 4px rgba(0,0,0,.1);max-width:280px;line-height:1.4}
 .legend-evidence{display:flex;gap:8px;margin-left:12px;padding-left:12px;border-left:1px solid #ddd}
-@media(max-width:640px){.left-panel{display:none}.right-panel{width:100%}}
+.mobile-toggle{display:none;position:fixed;bottom:16px;left:16px;z-index:20;width:44px;height:44px;border-radius:50%;background:#5b9bd5;color:#fff;border:none;font-size:20px;box-shadow:0 2px 8px rgba(0,0,0,.2);cursor:pointer}
+@media(max-width:640px){.left-panel{position:fixed;left:-260px;top:0;bottom:0;width:240px;z-index:25;box-shadow:2px 0 8px rgba(0,0,0,.15);transition:left .25s ease}.left-panel.open{left:0}.right-panel{width:100%}.mobile-toggle{display:block}.mobile-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:24}.mobile-overlay.show{display:block}}
 </style>
 </head>
 <body>
@@ -168,6 +169,8 @@ header h1 span{color:#888;font-weight:400;font-size:12px;margin-left:4px}
   </div>
 </div>
 <div class="tooltip" id="tooltip"></div>
+<button class="mobile-toggle" id="mobileToggle">☰</button>
+<div class="mobile-overlay" id="mobileOverlay"></div>
 
 <script>
 // ============================================================
@@ -950,6 +953,31 @@ symptomSortSelect.addEventListener('change', doSymptomSearch);
 symptomHighlightBtn.addEventListener('click', ()=>{
   const ids = [...new Set(lastSymptomMatches.map(m=>m.nutrient.id))];
   highlightMultipleNodes(ids);
+});
+
+// ============================================================
+// KEYBOARD ACCESSIBILITY
+// ============================================================
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape'){
+    detailPanel.classList.remove('open');
+    cy.elements().removeClass('highlighted dimmed searchMatch');
+  }
+});
+
+// ============================================================
+// MOBILE MENU TOGGLE
+// ============================================================
+const mobileToggle = document.getElementById('mobileToggle');
+const mobileOverlay = document.getElementById('mobileOverlay');
+const leftPanel = document.querySelector('.left-panel');
+mobileToggle.addEventListener('click', ()=>{
+  leftPanel.classList.toggle('open');
+  mobileOverlay.classList.toggle('show');
+});
+mobileOverlay.addEventListener('click', ()=>{
+  leftPanel.classList.remove('open');
+  mobileOverlay.classList.remove('show');
 });
 </script>
 </body>
