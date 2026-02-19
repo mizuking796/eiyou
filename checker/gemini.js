@@ -19,9 +19,10 @@ async function callGemini(prompt, imageBase64) {
   }
   parts.push({text: prompt});
 
-  // モデル名（設定から取得、デフォルトgemini-2.0-flash-lite）
+  // モデル名と適切なAPIバージョンを選択
   const model = localStorage.getItem('eiyou_model') || 'gemini-1.5-flash';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const apiVer = model.startsWith('gemini-1.') ? 'v1' : 'v1beta';
+  const url = `https://generativelanguage.googleapis.com/${apiVer}/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const resp = await fetch(url, {
     method: 'POST',
