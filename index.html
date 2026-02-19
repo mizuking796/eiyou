@@ -33,9 +33,22 @@ header h1 span{color:#888;font-weight:400;font-size:12px;margin-left:4px}
 .reverse-btn.active{background:#5b9bd5;color:#fff;border-color:#5b9bd5}
 .reverse-input{width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;margin:4px 0;outline:none;display:none}
 .reverse-input.show{display:block}
+.tag-chips{display:none;flex-wrap:wrap;gap:3px;margin:4px 0;max-height:100px;overflow-y:auto}
+.tag-chips.show{display:flex}
+.tag-chip{font-size:10px;padding:2px 6px;border-radius:10px;background:#f5f5f5;color:#666;cursor:pointer;white-space:nowrap;border:1px solid #e0e0e0;transition:all .15s}
+.tag-chip:hover{background:#e3f2fd;border-color:#90caf9;color:#1565c0}
+.tag-chip.active{background:#5b9bd5;color:#fff;border-color:#5b9bd5}
+.tag-group-label{font-size:9px;color:#aaa;padding:2px 4px;width:100%;flex-shrink:0}
+.reverse-sort{display:none;align-items:center;gap:4px;margin:4px 0}
+.reverse-sort.show{display:flex}
+.reverse-sort select{font-size:10px;padding:2px 4px;border:1px solid #ddd;border-radius:4px;flex:1}
+.reverse-sort label{font-size:10px;color:#999;white-space:nowrap}
 .reverse-results{font-size:11px;color:#666;margin-top:4px;max-height:200px;overflow-y:auto}
 .reverse-results .result-item{padding:4px 6px;border-radius:4px;cursor:pointer;margin:2px 0}
 .reverse-results .result-item:hover{background:#f0f7ff}
+.reverse-results .result-group{font-size:9px;color:#999;font-weight:600;margin:6px 0 2px;padding:2px 0;border-bottom:1px solid #eee}
+.reverse-highlight-btn{font-size:10px;padding:2px 8px;border:1px solid #5b9bd5;border-radius:4px;background:#fff;color:#5b9bd5;cursor:pointer;margin:4px 0;width:100%;transition:all .15s}
+.reverse-highlight-btn:hover{background:#5b9bd5;color:#fff}
 .graph-container{flex:1;position:relative;background:#fafbfc}
 #cy{width:100%;height:100%}
 .legend{position:absolute;bottom:12px;left:12px;background:rgba(255,255,255,.92);border-radius:8px;padding:8px 12px;font-size:11px;box-shadow:0 1px 4px rgba(0,0,0,.1);display:flex;gap:12px;flex-wrap:wrap}
@@ -124,10 +137,16 @@ header h1 span{color:#888;font-weight:400;font-size:12px;margin-left:4px}
     <div class="reverse-section">
       <h3>逆引き検索</h3>
       <button class="reverse-btn" id="foodSearchBtn">食材 → 栄養素</button>
-      <input type="text" class="reverse-input" id="foodSearchInput" placeholder="食材名を入力...">
+      <input type="text" class="reverse-input" id="foodSearchInput" placeholder="食材名を入力 or 下から選択...">
+      <div class="tag-chips" id="foodTags"></div>
+      <div class="reverse-sort" id="foodSort"><label>並び:</label><select id="foodSortSelect"><option value="default">検索順</option><option value="category">カテゴリ別</option><option value="subcategory">サブカテゴリ別</option><option value="name">五十音順</option></select></div>
+      <button class="reverse-highlight-btn" id="foodHighlightBtn" style="display:none">グラフ上でハイライト</button>
       <div class="reverse-results" id="foodResults"></div>
       <button class="reverse-btn" id="symptomSearchBtn">症状 → 栄養素</button>
-      <input type="text" class="reverse-input" id="symptomSearchInput" placeholder="症状を入力...">
+      <input type="text" class="reverse-input" id="symptomSearchInput" placeholder="症状を入力 or 下から選択...">
+      <div class="tag-chips" id="symptomTags"></div>
+      <div class="reverse-sort" id="symptomSort"><label>並び:</label><select id="symptomSortSelect"><option value="default">検索順</option><option value="category">カテゴリ別</option><option value="subcategory">サブカテゴリ別</option><option value="name">五十音順</option></select></div>
+      <button class="reverse-highlight-btn" id="symptomHighlightBtn" style="display:none">グラフ上でハイライト</button>
       <div class="reverse-results" id="symptomResults"></div>
     </div>
   </div>
@@ -663,25 +682,142 @@ document.querySelectorAll('#catFilters input, #subFilters input, #evidenceFilter
 });
 
 // ============================================================
+// REVERSE LOOKUP: Shared Utilities
+// ============================================================
+function highlightMultipleNodes(nodeIds){
+  cy.elements().removeClass('highlighted dimmed searchMatch');
+  if(nodeIds.length === 0) return;
+  const matchNodes = cy.nodes().filter(n=>nodeIds.includes(n.id()));
+  cy.elements().not(matchNodes).addClass('dimmed');
+  matchNodes.addClass('searchMatch');
+  cy.fit(matchNodes, 40);
+}
+
+const CAT_ORDER = {vitamin:0,mineral:1,aminoAcid:2};
+const CAT_LABEL = {vitamin:'ビタミン',mineral:'ミネラル',aminoAcid:'アミノ酸'};
+
+function sortResults(matches, mode, keyNutrient){
+  const arr = [...matches];
+  switch(mode){
+    case 'category':
+      arr.sort((a,b)=>(CAT_ORDER[a[keyNutrient].category]||0)-(CAT_ORDER[b[keyNutrient].category]||0));
+      break;
+    case 'subcategory':
+      arr.sort((a,b)=>(a[keyNutrient].subCategory||'').localeCompare(b[keyNutrient].subCategory||''));
+      break;
+    case 'name':
+      arr.sort((a,b)=>a[keyNutrient].name.localeCompare(b[keyNutrient].name,'ja'));
+      break;
+  }
+  return arr;
+}
+
+function renderGrouped(container, matches, mode, keyNutrient, renderItem){
+  container.innerHTML = '';
+  if(matches.length === 0){
+    container.innerHTML = '<div style="padding:4px;color:#999">該当なし</div>';
+    return;
+  }
+  const grouped = mode === 'category' || mode === 'subcategory';
+  let lastGroup = null;
+  matches.forEach(m=>{
+    if(grouped){
+      const grp = mode==='category' ? CAT_LABEL[m[keyNutrient].category] : m[keyNutrient].subCategory;
+      if(grp !== lastGroup){
+        const hdr = document.createElement('div');
+        hdr.className = 'result-group';
+        hdr.textContent = grp;
+        container.appendChild(hdr);
+        lastGroup = grp;
+      }
+    }
+    container.appendChild(renderItem(m));
+  });
+}
+
+// ============================================================
 // REVERSE LOOKUP: Food → Nutrients
 // ============================================================
 const foodSearchBtn = document.getElementById('foodSearchBtn');
 const foodSearchInput = document.getElementById('foodSearchInput');
 const foodResults = document.getElementById('foodResults');
+const foodTags = document.getElementById('foodTags');
+const foodSort = document.getElementById('foodSort');
+const foodSortSelect = document.getElementById('foodSortSelect');
+const foodHighlightBtn = document.getElementById('foodHighlightBtn');
+
+// Extract popular food tags from data
+(function buildFoodTags(){
+  const foodCount = {};
+  nutrients.forEach(n=>n.foods.forEach(f=>{
+    const name = f.name.replace(/（.*）/g,'').trim();
+    if(name==='含有'||name==='高含有'||name==='微量') return;
+    foodCount[name] = (foodCount[name]||0) + 1;
+  }));
+  // Group by category
+  const foodGroups = {'肉・レバー':[],'魚介':[],'野菜':[],'豆・種実':[],'乳・卵':[],'穀物':[],'果物':[],'海藻':[],'その他':[]};
+  const classify = name => {
+    if(/レバー|肉|ささみ/.test(name)) return '肉・レバー';
+    if(/魚|鮭|さんま|まぐろ|かつお|しじみ|あさり|牡蠣|しらす|たらこ|たら|しゃこ|いわし|貝/.test(name)) return '魚介';
+    if(/ほうれん草|ブロッコリー|小松菜|にんじん|かぼちゃ|にんにく|玉ねぎ|アスパラガス|トマト|ピーマン|パセリ|モロヘイヤ|枝豆|れんこん|生姜/.test(name)) return '野菜';
+    if(/大豆|納豆|アーモンド|落花生|カシューナッツ|ナッツ|豆|高野豆腐|ブラジルナッツ/.test(name)) return '豆・種実';
+    if(/卵|牛乳|チーズ|ヨーグルト/.test(name)) return '乳・卵';
+    if(/玄米|そば|大麦|全粒|穀物/.test(name)) return '穀物';
+    if(/バナナ|キウイ|いちご|レモン|オレンジ|りんご|ぶどう|桃|すいか|メロン|グレープフルーツ|いちじく|柑橘/.test(name)) return '果物';
+    if(/昆布|わかめ|ひじき|海苔|海藻|青海苔|あおさ/.test(name)) return '海藻';
+    return 'その他';
+  };
+  Object.keys(foodCount).forEach(name=>{
+    const grp = classify(name);
+    foodGroups[grp].push({name, count:foodCount[name]});
+  });
+  Object.keys(foodGroups).forEach(grp=>{
+    const items = foodGroups[grp].sort((a,b)=>b.count-a.count);
+    if(items.length === 0) return;
+    const label = document.createElement('div');
+    label.className = 'tag-group-label';
+    label.textContent = grp;
+    foodTags.appendChild(label);
+    items.forEach(item=>{
+      const chip = document.createElement('span');
+      chip.className = 'tag-chip';
+      chip.textContent = item.name;
+      chip.dataset.query = item.name;
+      chip.addEventListener('click', ()=>{
+        document.querySelectorAll('#foodTags .tag-chip').forEach(c=>c.classList.remove('active'));
+        chip.classList.add('active');
+        foodSearchInput.value = item.name;
+        foodSearchInput.dispatchEvent(new Event('input'));
+      });
+      foodTags.appendChild(chip);
+    });
+  });
+})();
+
+let lastFoodMatches = [];
 
 foodSearchBtn.addEventListener('click', ()=>{
-  foodSearchInput.classList.toggle('show');
-  foodSearchBtn.classList.toggle('active');
-  if(!foodSearchInput.classList.contains('show')){
+  const open = !foodSearchInput.classList.contains('show');
+  foodSearchInput.classList.toggle('show', open);
+  foodTags.classList.toggle('show', open);
+  foodSort.classList.toggle('show', open);
+  foodSearchBtn.classList.toggle('active', open);
+  if(!open){
     foodSearchInput.value='';foodResults.innerHTML='';
+    foodHighlightBtn.style.display='none';
+    lastFoodMatches=[];
+    document.querySelectorAll('#foodTags .tag-chip').forEach(c=>c.classList.remove('active'));
+    cy.elements().removeClass('highlighted dimmed searchMatch');
   } else {
     foodSearchInput.focus();
   }
 });
 
-foodSearchInput.addEventListener('input', ()=>{
+function doFoodSearch(){
   const q = foodSearchInput.value.trim().toLowerCase();
   foodResults.innerHTML = '';
+  lastFoodMatches = [];
+  foodHighlightBtn.style.display='none';
   if(!q) return;
   const matches = [];
   nutrients.forEach(n=>{
@@ -691,11 +827,9 @@ foodSearchInput.addEventListener('input', ()=>{
       }
     });
   });
-  if(matches.length === 0){
-    foodResults.innerHTML = '<div style="padding:4px;color:#999">該当なし</div>';
-    return;
-  }
-  matches.forEach(m=>{
+  lastFoodMatches = matches;
+  const sorted = sortResults(matches, foodSortSelect.value, 'nutrient');
+  renderGrouped(foodResults, sorted, foodSortSelect.value, 'nutrient', m=>{
     const div = document.createElement('div');
     div.className = 'result-item';
     div.innerHTML = `<span style="color:${COLORS[m.nutrient.subCategory].bg}">●</span> <strong>${m.nutrient.name}</strong> ← ${m.food.name} (${m.food.amount})`;
@@ -706,8 +840,16 @@ foodSearchInput.addEventListener('input', ()=>{
       highlightNode(m.nutrient.id);
       showDetail(m.nutrient.id);
     });
-    foodResults.appendChild(div);
+    return div;
   });
+  if(matches.length > 0) foodHighlightBtn.style.display='block';
+}
+
+foodSearchInput.addEventListener('input', doFoodSearch);
+foodSortSelect.addEventListener('change', doFoodSearch);
+foodHighlightBtn.addEventListener('click', ()=>{
+  const ids = [...new Set(lastFoodMatches.map(m=>m.nutrient.id))];
+  highlightMultipleNodes(ids);
 });
 
 // ============================================================
@@ -716,20 +858,75 @@ foodSearchInput.addEventListener('input', ()=>{
 const symptomSearchBtn = document.getElementById('symptomSearchBtn');
 const symptomSearchInput = document.getElementById('symptomSearchInput');
 const symptomResults = document.getElementById('symptomResults');
+const symptomTags = document.getElementById('symptomTags');
+const symptomSort = document.getElementById('symptomSort');
+const symptomSortSelect = document.getElementById('symptomSortSelect');
+const symptomHighlightBtn = document.getElementById('symptomHighlightBtn');
+
+// Extract symptom keyword tags from data
+(function buildSymptomTags(){
+  const keywords = {};
+  const groups = {'血液・貧血':['貧血','出血','血'],'骨・関節':['骨','くる病','骨軟化','骨粗鬆'],'皮膚・毛髪':['皮膚','脱毛','毛髪','爪','湿疹','白髪'],'神経・精神':['神経','しびれ','うつ','認知','不眠','意識'],'消化器':['下痢','食欲不振','吐き気','嘔吐','便秘'],'免疫':['免疫','感染'],'成長・代謝':['成長障害','代謝','糖尿','血糖'],'疲労・全身':['疲労','倦怠','筋力低下','筋痙攣'],'口腔':['口角炎','口内炎','舌炎','虫歯','歯'],'視覚':['夜盲','視覚','眼']};
+  const allSymptoms = [];
+  nutrients.forEach(n=>{
+    n.deficiency.split('、').forEach(s=>allSymptoms.push(s.replace(/（.*?）/g,'').trim()));
+    n.excess.split('、').forEach(s=>allSymptoms.push(s.replace(/（.*?）/g,'').trim()));
+  });
+  // Count occurrences
+  const symCount = {};
+  allSymptoms.forEach(s=>{if(s && s.length>1) symCount[s]=(symCount[s]||0)+1});
+  // Build tags by group
+  Object.entries(groups).forEach(([grp, kws])=>{
+    const label = document.createElement('div');
+    label.className = 'tag-group-label';
+    label.textContent = grp;
+    symptomTags.appendChild(label);
+    // Find matching symptoms for this group
+    const matched = new Set();
+    kws.forEach(kw=>{
+      Object.keys(symCount).forEach(s=>{
+        if(s.includes(kw) && !matched.has(s)) matched.add(s);
+      });
+    });
+    [...matched].sort((a,b)=>(symCount[b]||0)-(symCount[a]||0)).slice(0,6).forEach(s=>{
+      const chip = document.createElement('span');
+      chip.className = 'tag-chip';
+      chip.textContent = s;
+      chip.addEventListener('click', ()=>{
+        document.querySelectorAll('#symptomTags .tag-chip').forEach(c=>c.classList.remove('active'));
+        chip.classList.add('active');
+        symptomSearchInput.value = s;
+        symptomSearchInput.dispatchEvent(new Event('input'));
+      });
+      symptomTags.appendChild(chip);
+    });
+  });
+})();
+
+let lastSymptomMatches = [];
 
 symptomSearchBtn.addEventListener('click', ()=>{
-  symptomSearchInput.classList.toggle('show');
-  symptomSearchBtn.classList.toggle('active');
-  if(!symptomSearchInput.classList.contains('show')){
+  const open = !symptomSearchInput.classList.contains('show');
+  symptomSearchInput.classList.toggle('show', open);
+  symptomTags.classList.toggle('show', open);
+  symptomSort.classList.toggle('show', open);
+  symptomSearchBtn.classList.toggle('active', open);
+  if(!open){
     symptomSearchInput.value='';symptomResults.innerHTML='';
+    symptomHighlightBtn.style.display='none';
+    lastSymptomMatches=[];
+    document.querySelectorAll('#symptomTags .tag-chip').forEach(c=>c.classList.remove('active'));
+    cy.elements().removeClass('highlighted dimmed searchMatch');
   } else {
     symptomSearchInput.focus();
   }
 });
 
-symptomSearchInput.addEventListener('input', ()=>{
+function doSymptomSearch(){
   const q = symptomSearchInput.value.trim().toLowerCase();
   symptomResults.innerHTML = '';
+  lastSymptomMatches = [];
+  symptomHighlightBtn.style.display='none';
   if(!q) return;
   const matches = [];
   nutrients.forEach(n=>{
@@ -738,11 +935,9 @@ symptomSearchInput.addEventListener('input', ()=>{
     if(defMatch) matches.push({nutrient:n, type:'欠乏', text:n.deficiency});
     if(exMatch) matches.push({nutrient:n, type:'過剰', text:n.excess});
   });
-  if(matches.length === 0){
-    symptomResults.innerHTML = '<div style="padding:4px;color:#999">該当なし</div>';
-    return;
-  }
-  matches.forEach(m=>{
+  lastSymptomMatches = matches;
+  const sorted = sortResults(matches, symptomSortSelect.value, 'nutrient');
+  renderGrouped(symptomResults, sorted, symptomSortSelect.value, 'nutrient', m=>{
     const div = document.createElement('div');
     div.className = 'result-item';
     const typeColor = m.type === '欠乏' ? '#e65100' : '#c62828';
@@ -754,8 +949,16 @@ symptomSearchInput.addEventListener('input', ()=>{
       highlightNode(m.nutrient.id);
       showDetail(m.nutrient.id);
     });
-    symptomResults.appendChild(div);
+    return div;
   });
+  if(matches.length > 0) symptomHighlightBtn.style.display='block';
+}
+
+symptomSearchInput.addEventListener('input', doSymptomSearch);
+symptomSortSelect.addEventListener('change', doSymptomSearch);
+symptomHighlightBtn.addEventListener('click', ()=>{
+  const ids = [...new Set(lastSymptomMatches.map(m=>m.nutrient.id))];
+  highlightMultipleNodes(ids);
 });
 </script>
 </body>
