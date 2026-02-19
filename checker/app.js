@@ -166,6 +166,14 @@ settingsBtn.addEventListener('click', () => {
   openModal('settingsModal');
 });
 
+document.getElementById('toggleGuide').addEventListener('click', () => {
+  const guide = document.getElementById('apiGuide');
+  const btn = document.getElementById('toggleGuide');
+  const show = guide.style.display === 'none';
+  guide.style.display = show ? '' : 'none';
+  btn.textContent = show ? 'ガイドを閉じる' : 'APIキーの取得方法を見る';
+});
+
 toggleApiKey.addEventListener('click', () => {
   const isPass = apiKeyInput.type === 'password';
   apiKeyInput.type = isPass ? 'text' : 'password';

@@ -167,6 +167,23 @@ textarea{resize:vertical;min-height:80px}
 .toast.error{background:#e74c3c}
 .toast.info{background:#5b9bd5}
 
+/* --- Setup Guide --- */
+.setup-guide{background:#f8f9fa;border:1px solid #e8edf2;border-radius:10px;padding:16px;margin-bottom:16px}
+.setup-guide h3{font-size:13px;font-weight:700;margin-bottom:12px;color:#2c3e50}
+.setup-step{display:flex;gap:10px;margin-bottom:14px}
+.setup-step:last-child{margin-bottom:0}
+.step-number{width:26px;height:26px;border-radius:50%;background:#5b9bd5;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;margin-top:1px}
+.step-content{flex:1;min-width:0}
+.step-title{font-size:13px;font-weight:700;color:#2c3e50;margin-bottom:3px}
+.step-desc{font-size:12px;color:#555;line-height:1.6}
+.step-desc strong{color:#2c3e50}
+.step-note{font-size:11px;color:#aaa;margin-top:2px}
+.step-list{padding-left:16px;margin:3px 0;font-size:12px;color:#555;line-height:1.6}
+.step-list li{margin-bottom:2px}
+.step-list strong{color:#2c3e50}
+.guide-img{display:block;width:100%;max-width:360px;border-radius:6px;border:1px solid #e0e4e8;margin:5px 0}
+.guide-img-sm{max-width:200px}
+
 /* --- Demo Banner --- */
 .demo-banner{background:#e3f2fd;border-radius:10px;padding:16px 20px;margin-bottom:16px;text-align:center;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
 .demo-banner p{font-size:13px;color:#1565c0;margin:0}

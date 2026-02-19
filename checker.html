@@ -212,7 +212,58 @@
           <button class="btn btn-sm btn-outline" id="toggleApiKey" style="flex-shrink:0">表示</button>
         </div>
         <div style="font-size:11px;color:#999;margin-top:4px">
-          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> で無料取得できます
+          キーはこの端末にのみ保存されます。サーバーには送信されません。
+        </div>
+        <button class="btn btn-sm btn-outline" id="toggleGuide" style="margin-top:8px;font-size:11px">APIキーの取得方法を見る</button>
+      </div>
+
+      <!-- API Key Guide (collapsible) -->
+      <div class="setup-guide" id="apiGuide" style="display:none">
+        <h3>APIキーの取得方法（無料・3分）</h3>
+
+        <div class="setup-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Google AI Studio を開く</div>
+            <p class="step-desc">下のボタンからGoogle AI Studioを開きます。Googleアカウントでログインしてください。</p>
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="btn btn-sm btn-primary" style="margin-top:4px">Google AI Studio を開く →</a>
+          </div>
+        </div>
+
+        <div class="setup-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">利用規約に同意する</div>
+            <p class="step-desc">初回のみ「Welcome」画面が表示されます。<br>上のチェックボックス（I acknowledge...）に<strong>チェック</strong>を入れて、右下の<strong>「続行」</strong>ボタンを押してください。</p>
+            <img src="checker/img/guide-welcome.png" alt="Welcome画面" class="guide-img">
+            <p class="step-note">下のチェック（メール受信）は任意です。</p>
+          </div>
+        </div>
+
+        <div class="setup-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">APIキーをコピー</div>
+            <p class="step-desc">キーの一覧画面が表示されます。</p>
+            <ul class="step-list">
+              <li>既にキーがある場合 → そのキー名を<strong>クリック</strong></li>
+            </ul>
+            <img src="checker/img/guide-key-list.png" alt="キー一覧" class="guide-img guide-img-sm">
+            <ul class="step-list">
+              <li>キーがない場合 →「<strong>APIキーを作成</strong>」ボタンで新規作成</li>
+            </ul>
+            <img src="checker/img/guide-create-btn.png" alt="作成ボタン" class="guide-img guide-img-sm">
+            <p class="step-desc">「APIキーの詳細」画面が開くので、右下の<strong>「キーをコピー」</strong>ボタンを押してください。</p>
+            <img src="checker/img/guide-key-detail.png" alt="キー詳細" class="guide-img">
+          </div>
+        </div>
+
+        <div class="setup-step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <div class="step-title">上の入力欄に貼り付け</div>
+            <p class="step-desc">コピーしたキーを上の「Gemini APIキー」欄に貼り付けて「保存」を押してください。</p>
+          </div>
         </div>
       </div>
       <div class="form-group">
