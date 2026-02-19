@@ -301,16 +301,20 @@ function checkApiKey() {
 
 function handleApiError(err) {
   const msg = err.message || '';
+  console.error('API Error:', msg, err);
   if (msg === 'API_KEY_MISSING') {
     showToast('APIキーが未設定です', 'error');
     openModal('settingsModal');
   } else if (msg === 'API_KEY_INVALID') {
     showToast('APIキーが無効です。設定を確認してください', 'error');
-  } else if (msg === 'RATE_LIMITED') {
-    showToast('API制限に達しました。少し待ってから再試行してください', 'error');
+  } else if (msg.startsWith('RATE_LIMITED:')) {
+    showToast('レート制限: ' + msg.replace('RATE_LIMITED:', ''), 'error');
+  } else if (msg.startsWith('BAD_REQUEST:')) {
+    showToast('リクエストエラー: ' + msg.replace('BAD_REQUEST:', ''), 'error');
+  } else if (msg.startsWith('BLOCKED:')) {
+    showToast('安全フィルタでブロックされました', 'error');
   } else {
     showToast('解析エラー: ' + msg, 'error');
-    console.error(err);
   }
 }
 

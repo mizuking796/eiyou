@@ -19,24 +19,42 @@ async function callGemini(prompt, imageBase64) {
   }
   parts.push({text: prompt});
 
-  const resp = await fetch(
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
-    {
-      method: 'POST',
-      headers: {'Content-Type':'application/json', 'x-goog-api-key': apiKey},
-      body: JSON.stringify({
-        contents: [{parts}],
-        generationConfig: {responseMimeType:'application/json', temperature:0.2}
-      })
-    }
-  );
+  // APIキーはURLパラメータで送信（ブラウザからはヘッダーよりCORS安全）
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-  if (resp.status === 401 || resp.status === 403) throw new Error('API_KEY_INVALID');
-  if (resp.status === 429) throw new Error('RATE_LIMITED');
-  if (!resp.ok) throw new Error(`API_ERROR_${resp.status}`);
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      contents: [{parts}],
+      generationConfig: {responseMimeType:'application/json', temperature:0.2}
+    })
+  });
+
+  if (!resp.ok) {
+    // エラーレスポンスの詳細を取得
+    let detail = '';
+    try {
+      const errBody = await resp.json();
+      detail = errBody.error?.message || JSON.stringify(errBody.error || errBody);
+    } catch { detail = resp.statusText; }
+    console.error('Gemini API error:', resp.status, detail);
+
+    if (resp.status === 400) throw new Error('BAD_REQUEST:' + detail);
+    if (resp.status === 401 || resp.status === 403) throw new Error('API_KEY_INVALID');
+    if (resp.status === 429) throw new Error('RATE_LIMITED:' + detail);
+    throw new Error(`API_ERROR_${resp.status}:${detail}`);
+  }
 
   const data = await resp.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  // candidates が空の場合（安全フィルタ等）
+  if (!data.candidates || data.candidates.length === 0) {
+    const reason = data.promptFeedback?.blockReason || 'unknown';
+    throw new Error('BLOCKED:' + reason);
+  }
+
+  const text = data.candidates[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error('EMPTY_RESPONSE');
 
   return JSON.parse(text);
