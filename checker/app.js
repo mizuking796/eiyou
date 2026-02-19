@@ -537,11 +537,15 @@ function renderDashboard() {
 
   if (loadMeals().length === 0) {
     content.innerHTML = '<div class="empty-state">食事を記録するとここに栄養バランスが表示されます</div>';
+    document.getElementById('alertCard').style.display = 'none';
+    document.getElementById('suggestCard').style.display = 'none';
     return;
   }
 
   if (meals.length === 0) {
     content.innerHTML = '<div class="empty-state">この期間の食事データがありません</div>';
+    document.getElementById('alertCard').style.display = 'none';
+    document.getElementById('suggestCard').style.display = 'none';
     return;
   }
 
