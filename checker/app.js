@@ -56,6 +56,13 @@ const NUTRITION_TIPS = [
   '1日に必要な水分量は体重1kgあたり約30〜35mL',
 ];
 
+// --- HTML Escape (XSS対策) ---
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s == null ? '' : String(s);
+  return d.innerHTML;
+}
+
 // --- UI Utilities ---
 let _tipTimer = null;
 let _tipIndex = 0;
@@ -257,7 +264,7 @@ function renderFoodList() {
   foodItems.forEach((item, i) => {
     const li = document.createElement('li');
     li.innerHTML = `
-      <span class="name">${item.name}</span>
+      <span class="name">${esc(item.name)}</span>
       <select onchange="foodItems[${i}].quantity=this.value">
         <option${item.quantity==='少なめ'?' selected':''}>少なめ</option>
         <option${item.quantity==='普通'?' selected':''}>普通</option>
@@ -297,6 +304,7 @@ const photoAnalyzeBtn = document.getElementById('photoAnalyzeBtn');
 
 photoFile.addEventListener('change', () => {
   const file = photoFile.files[0];
+  if (photoPreview.src && photoPreview.src.startsWith('blob:')) URL.revokeObjectURL(photoPreview.src);
   if (!file) { photoPreview.classList.remove('show'); photoAnalyzeBtn.disabled = true; return; }
   photoPreview.src = URL.createObjectURL(file);
   photoPreview.classList.add('show');
@@ -390,7 +398,7 @@ function showConfirmModal(data) {
 
   // Items list
   const itemsHtml = data.items.map(it =>
-    `<span style="display:inline-block;background:#f0f0f0;padding:2px 8px;border-radius:4px;margin:2px;font-size:12px">${it.name} ${it.quantity || ''} ${it.grams ? it.grams+'g' : ''}</span>`
+    `<span style="display:inline-block;background:#f0f0f0;padding:2px 8px;border-radius:4px;margin:2px;font-size:12px">${esc(it.name)} ${esc(it.quantity || '')} ${it.grams ? esc(it.grams)+'g' : ''}</span>`
   ).join('');
 
   // Editable nutrient table
@@ -526,7 +534,6 @@ function renderDashboard() {
   document.getElementById('dashPeriodBadge').textContent = label;
 
   const content = document.getElementById('dashboardContent');
-  const demoPrompt = document.getElementById('demoPrompt');
 
   if (loadMeals().length === 0) {
     content.innerHTML = '<div class="empty-state">食事を記録するとここに栄養バランスが表示されます</div>';
@@ -698,16 +705,16 @@ suggestBtn.addEventListener('click', async () => {
         if (!meal) return '';
         // 新構造(dishes配列)と旧構造(文字列)の両方に対応
         if (typeof meal === 'string') {
-          return `<div class="sg-meal"><div class="sg-meal-header">${ml.icon} ${ml.label}</div><div class="sg-dish"><span class="sg-dish-name">${meal}</span></div></div>`;
+          return `<div class="sg-meal"><div class="sg-meal-header">${ml.icon} ${ml.label}</div><div class="sg-dish"><span class="sg-dish-name">${esc(meal)}</span></div></div>`;
         }
         const dishes = (meal.dishes || []).map(d => {
-          const cat = d.category ? `<span class="sg-cat">${d.category}</span>` : '';
-          const tip = d.tip ? `<div class="sg-tip">${d.tip}</div>` : '';
-          return `<div class="sg-dish">${cat}<span class="sg-dish-name">${d.name}</span><span class="sg-amount">${d.amount || ''}</span>${tip}</div>`;
+          const cat = d.category ? `<span class="sg-cat">${esc(d.category)}</span>` : '';
+          const tip = d.tip ? `<div class="sg-tip">${esc(d.tip)}</div>` : '';
+          return `<div class="sg-dish">${cat}<span class="sg-dish-name">${esc(d.name)}</span><span class="sg-amount">${esc(d.amount || '')}</span>${tip}</div>`;
         }).join('');
         return `<div class="sg-meal"><div class="sg-meal-header">${ml.icon} ${ml.label}</div>${dishes}</div>`;
       }).join('');
-      const point = day.point ? `<div class="sg-point">${day.point}</div>` : '';
+      const point = day.point ? `<div class="sg-point">${esc(day.point)}</div>` : '';
       return `<div class="sg-day"><div class="sg-day-title">${day.day}日目</div>${mealsHtml}${point}</div>`;
     }).join('');
   } catch (err) {
@@ -745,7 +752,7 @@ function renderHistory() {
 
   content.innerHTML = meals.map(m => {
     const mt = MEAL_TYPES[m.mealType] || {label:'?', icon:'🍽️'};
-    const foods = (m.items || []).map(i => i.name).join(', ') || '(詳細なし)';
+    const foods = (m.items || []).map(i => esc(i.name)).join(', ') || '(詳細なし)';
     const cal = Math.round(m.nutrients?.calories || 0);
     const demo = m.isDemo ? '<span class="history-demo">DEMO</span>' : '';
     return `<div class="history-item">
@@ -782,7 +789,8 @@ document.getElementById('csvBtn').addEventListener('click', () => {
   meals.sort((a, b) => a.date.localeCompare(b.date)).forEach(m => {
     const mt = MEAL_TYPES[m.mealType]?.label || m.mealType;
     const foods = (m.items || []).map(i => i.name).join('/');
-    const vals = [m.date, mt, `"${foods}"`, Math.round(m.nutrients?.calories || 0)];
+    const csvFoods = '"' + foods.replace(/"/g, '""') + '"';
+    const vals = [m.date, mt, csvFoods, Math.round(m.nutrients?.calories || 0)];
     nutrientCols.forEach(k => vals.push(Math.round((m.nutrients?.[k] || 0) * 10) / 10));
     rows.push(vals.join(','));
   });
