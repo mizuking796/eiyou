@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>栄養バランスチェッカー | Nutrition Balance Checker</title>
+<link rel="stylesheet" href="checker/style.css">
+</head>
+<body>
+
+<!-- ======== Header ======== -->
+<div class="header">
+  <h1>栄養バランスチェッカー<small>Balance Checker</small></h1>
+  <div class="header-nav">
+    <a href="index.html">栄養素DB</a>
+    <button class="btn-icon" id="settingsBtn">設定</button>
+  </div>
+</div>
+
+<!-- ======== Main Content ======== -->
+<div class="container">
+
+  <!-- Dashboard -->
+  <div class="card" id="dashboardCard">
+    <div class="card-header">
+      <h2>栄養バランス</h2>
+      <span class="badge" id="dashPeriodBadge">-</span>
+      <span class="card-toggle">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="period-btns" id="periodBtns">
+        <button class="period-btn active" data-period="today">今日</button>
+        <button class="period-btn" data-period="7days">過去7日</button>
+        <button class="period-btn" data-period="custom">期間指定</button>
+      </div>
+      <div class="custom-period" id="customPeriod">
+        <label>開始</label><input type="date" id="periodStart">
+        <label>〜 終了</label><input type="date" id="periodEnd">
+        <button class="btn btn-sm btn-outline" id="applyPeriod">適用</button>
+      </div>
+      <div id="dashboardContent">
+        <div class="demo-prompt" id="demoPrompt">
+          <p>まだ食事データがありません</p>
+          <button class="btn btn-primary" id="loadDemoBtn">サンプルデータで体験</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  <div class="card" id="alertCard" style="display:none">
+    <div class="card-header">
+      <h2>不足・過剰アラート</h2>
+      <span class="badge" id="alertCount">0</span>
+      <span class="card-toggle">▼</span>
+    </div>
+    <div class="card-body" id="alertContent"></div>
+  </div>
+
+  <!-- AI Suggestions -->
+  <div class="card" id="suggestCard" style="display:none">
+    <div class="card-header">
+      <h2>AI献立提案</h2>
+      <span class="card-toggle">▼</span>
+    </div>
+    <div class="card-body">
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+        <select id="suggestDays" style="width:80px;padding:6px;font-size:13px">
+          <option value="1">1日分</option>
+          <option value="3" selected>3日分</option>
+          <option value="7">7日分</option>
+        </select>
+        <button class="btn btn-sm btn-primary" id="suggestBtn">提案を生成</button>
+      </div>
+      <div id="suggestContent" class="empty-state">不足栄養素に基づくAI献立提案</div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="card" id="inputCard">
+    <div class="card-header">
+      <h2>食事を記録</h2>
+      <span class="card-toggle">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="form">フォーム</button>
+        <button class="tab-btn" data-tab="photo">写真</button>
+        <button class="tab-btn" data-tab="text">テキスト</button>
+      </div>
+
+      <!-- Tab: Form -->
+      <div class="tab-content active" id="tab-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>日付</label>
+            <input type="date" id="formDate">
+          </div>
+          <div class="form-group">
+            <label>食事</label>
+            <select id="formMeal">
+              <option value="breakfast">朝食</option>
+              <option value="lunch" selected>昼食</option>
+              <option value="dinner">夕食</option>
+              <option value="snack">間食</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>食材・メニュー</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="foodInput" placeholder="食材名を入力..." autocomplete="off">
+            <div class="autocomplete-list" id="foodAC"></div>
+          </div>
+        </div>
+        <div class="form-row" style="margin-bottom:8px">
+          <div class="form-group" style="flex:0 0 100px">
+            <label>量</label>
+            <select id="foodQty">
+              <option value="少なめ">少なめ</option>
+              <option value="普通" selected>普通</option>
+              <option value="多め">多め</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:0 0 90px">
+            <label>g (任意)</label>
+            <input type="number" id="foodGrams" placeholder="g" min="1">
+          </div>
+          <div style="flex:0 0 auto;padding-top:18px">
+            <button class="btn btn-sm btn-outline" id="addFoodBtn">追加</button>
+          </div>
+        </div>
+        <ul class="food-items" id="foodList"></ul>
+        <button class="btn btn-primary btn-block" id="formAnalyzeBtn" disabled>Geminiで解析</button>
+      </div>
+
+      <!-- Tab: Photo -->
+      <div class="tab-content" id="tab-photo">
+        <div class="form-row">
+          <div class="form-group">
+            <label>日付</label>
+            <input type="date" id="photoDate">
+          </div>
+          <div class="form-group">
+            <label>食事</label>
+            <select id="photoMeal">
+              <option value="breakfast">朝食</option>
+              <option value="lunch" selected>昼食</option>
+              <option value="dinner">夕食</option>
+              <option value="snack">間食</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>食事の写真</label>
+          <input type="file" id="photoFile" accept="image/*" capture="environment" style="font-size:13px">
+        </div>
+        <img id="photoPreview" class="photo-preview" alt="プレビュー">
+        <button class="btn btn-primary btn-block" id="photoAnalyzeBtn" disabled>Geminiで解析</button>
+      </div>
+
+      <!-- Tab: Text -->
+      <div class="tab-content" id="tab-text">
+        <div class="form-group">
+          <label>食事の内容を自由に入力</label>
+          <textarea id="textInput" placeholder="例: 昨日の夜はラーメンと餃子5個食べた"></textarea>
+        </div>
+        <button class="btn btn-primary btn-block" id="textAnalyzeBtn">Geminiで解析</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="card" id="historyCard">
+    <div class="card-header">
+      <h2>食事履歴</h2>
+      <span class="badge" id="historyCount">0</span>
+      <span class="card-toggle">▼</span>
+    </div>
+    <div class="card-body">
+      <div id="historyContent"></div>
+      <div class="history-actions" id="historyActions" style="display:none">
+        <button class="btn btn-sm btn-outline" id="csvBtn">CSV出力</button>
+        <button class="btn btn-sm btn-danger" id="clearDemoBtn" style="display:none">デモデータ削除</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  ※ 栄養素の推定値はAIによる概算です。医療・診断目的には使用しないでください。<br>
+  日本人の食事摂取基準（2020年版）に基づく推奨量を参考値として使用しています。
+</div>
+
+<!-- ======== Settings Modal ======== -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>設定</h3>
+      <button class="modal-close" data-close="settingsModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Gemini APIキー</label>
+        <div style="display:flex;gap:6px">
+          <input type="password" id="apiKeyInput" placeholder="AIzaSy...">
+          <button class="btn btn-sm btn-outline" id="toggleApiKey" style="flex-shrink:0">表示</button>
+        </div>
+        <div style="font-size:11px;color:#999;margin-top:4px">
+          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> で無料取得できます
+        </div>
+      </div>
+      <hr style="border:none;border-top:1px solid #eee;margin:16px 0">
+      <div class="form-group">
+        <label>プロフィール</label>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>年齢</label>
+          <input type="number" id="profileAge" min="1" max="120" value="35">
+        </div>
+        <div class="form-group">
+          <label>性別</label>
+          <select id="profileSex">
+            <option value="male">男性</option>
+            <option value="female">女性</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>活動量</label>
+          <select id="profileActivity">
+            <option value="low">低い（デスクワーク中心）</option>
+            <option value="normal" selected>普通</option>
+            <option value="high">高い（肉体労働・運動習慣）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>体重 (kg)</label>
+          <input type="number" id="profileWeight" min="20" max="200" value="65" step="0.1">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" id="saveSettings">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======== Confirm Modal ======== -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <h3>解析結果の確認</h3>
+      <button class="modal-close" data-close="confirmModal">&times;</button>
+    </div>
+    <div class="modal-body" id="confirmBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" data-close="confirmModal">キャンセル</button>
+      <button class="btn btn-success" id="confirmSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======== Loading ======== -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loadingText">解析中...</div>
+</div>
+
+<!-- ======== Toast ======== -->
+<div class="toast" id="toast"></div>
+
+<!-- ======== Scripts ======== -->
+<script src="checker/data.js"></script>
+<script src="checker/gemini.js"></script>
+<script src="checker/demo.js"></script>
+<script src="checker/app.js"></script>
+
+</body>
+</html>

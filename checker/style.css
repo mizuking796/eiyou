@@ -1,0 +1,202 @@
+/* ============================================================
+   栄養バランスチェッカー — スタイル
+   ============================================================ */
+
+/* --- Reset & Base --- */
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:#f5f6fa;color:#333;line-height:1.6}
+a{color:#5b9bd5;text-decoration:none}
+a:hover{text-decoration:underline}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit;font-size:14px}
+
+/* --- Header --- */
+.header{background:#fff;border-bottom:1px solid #e0e0e0;padding:10px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
+.header h1{font-size:18px;font-weight:700;color:#2c3e50;white-space:nowrap}
+.header h1 small{font-size:11px;color:#999;font-weight:400;margin-left:4px}
+.header-nav{margin-left:auto;display:flex;gap:8px;align-items:center}
+.header-nav a,.btn-icon{padding:6px 12px;border:1px solid #ddd;border-radius:6px;font-size:12px;background:#fff;color:#555;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .15s}
+.header-nav a:hover,.btn-icon:hover{background:#f0f7ff;border-color:#5b9bd5;text-decoration:none}
+
+/* --- Container --- */
+.container{max-width:800px;margin:0 auto;padding:12px}
+
+/* --- Card --- */
+.card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:16px;overflow:hidden}
+.card-header{padding:14px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.card-header h2{font-size:15px;font-weight:600;flex:1}
+.card-header .badge{font-size:11px;padding:2px 8px;border-radius:10px;background:#e3f2fd;color:#1565c0}
+.card-toggle{font-size:12px;color:#999;transition:transform .2s}
+.card.collapsed .card-body{display:none}
+.card.collapsed .card-toggle{transform:rotate(-90deg)}
+.card-body{padding:16px}
+
+/* --- Tabs --- */
+.tabs{display:flex;border-bottom:2px solid #eee;margin-bottom:16px}
+.tab-btn{flex:1;padding:10px 8px;text-align:center;font-size:13px;font-weight:500;color:#888;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
+.tab-btn:hover{color:#5b9bd5}
+.tab-btn.active{color:#5b9bd5;border-bottom-color:#5b9bd5}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* --- Form Controls --- */
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:#666;margin-bottom:4px}
+.form-row{display:flex;gap:10px;align-items:flex-end}
+.form-row > *{flex:1}
+input[type="text"],input[type="number"],input[type="date"],input[type="password"],select,textarea{
+  width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;outline:none;transition:border-color .2s}
+input:focus,select:focus,textarea:focus{border-color:#5b9bd5}
+textarea{resize:vertical;min-height:80px}
+
+/* --- Autocomplete --- */
+.autocomplete-wrap{position:relative}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ddd;border-top:none;border-radius:0 0 6px 6px;max-height:200px;overflow-y:auto;z-index:40;display:none}
+.autocomplete-list.show{display:block}
+.autocomplete-item{padding:8px 12px;font-size:13px;cursor:pointer}
+.autocomplete-item:hover,.autocomplete-item.selected{background:#f0f7ff}
+
+/* --- Food Item List --- */
+.food-items{list-style:none;margin:8px 0}
+.food-items li{display:flex;align-items:center;gap:8px;padding:6px 8px;background:#f8f9fa;border-radius:6px;margin-bottom:4px;font-size:13px}
+.food-items li .name{flex:1}
+.food-items li select{width:80px;padding:4px;font-size:12px}
+.food-items li .remove{width:24px;height:24px;border:none;background:none;color:#e74c3c;font-size:16px}
+
+/* --- Buttons --- */
+.btn{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:500;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn-primary{background:#5b9bd5;color:#fff}
+.btn-primary:hover:not(:disabled){background:#4a8bc4}
+.btn-success{background:#27ae60;color:#fff}
+.btn-success:hover:not(:disabled){background:#219a52}
+.btn-danger{background:#e74c3c;color:#fff}
+.btn-danger:hover:not(:disabled){background:#c0392b}
+.btn-outline{background:#fff;color:#5b9bd5;border:1px solid #5b9bd5}
+.btn-outline:hover:not(:disabled){background:#f0f7ff}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:6px}
+.btn-block{width:100%;justify-content:center}
+
+/* --- Dashboard --- */
+.period-btns{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.period-btn{padding:6px 14px;border:1px solid #ddd;border-radius:16px;font-size:12px;background:#fff;color:#666;cursor:pointer;transition:all .15s}
+.period-btn:hover{border-color:#5b9bd5;color:#5b9bd5}
+.period-btn.active{background:#5b9bd5;color:#fff;border-color:#5b9bd5}
+
+.bar-group{margin-bottom:20px}
+.bar-group-title{font-size:13px;font-weight:600;margin-bottom:8px;padding:4px 8px;border-radius:4px;color:#fff;display:inline-block}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px}
+.bar-label{width:100px;text-align:right;color:#555;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{flex:1;height:18px;background:#eee;border-radius:9px;position:relative;overflow:hidden}
+.bar-fill{height:100%;border-radius:9px;transition:width .4s ease;min-width:2px}
+.bar-value{width:60px;text-align:right;font-size:12px;color:#888;flex-shrink:0}
+.bar-pct{font-weight:600}
+
+/* RDA marker line at 100% */
+.bar-track::after{content:'';position:absolute;left:min(100%, calc(100% * 100 / var(--max-pct, 200)));top:0;bottom:0;width:1px;background:rgba(0,0,0,.2);z-index:1}
+
+/* --- Alerts --- */
+.alert-item{display:flex;gap:10px;padding:10px 12px;border-radius:8px;margin-bottom:8px;font-size:13px;align-items:flex-start}
+.alert-item.warning{background:#fff8e1;border-left:3px solid #f39c12}
+.alert-item.danger{background:#fce4ec;border-left:3px solid #e74c3c}
+.alert-item.excess{background:#fff3e0;border-left:3px solid #e67e22}
+.alert-icon{font-size:18px;flex-shrink:0;line-height:1}
+.alert-body{flex:1}
+.alert-title{font-weight:600;margin-bottom:2px}
+.alert-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.alert-tag{font-size:11px;padding:1px 6px;border-radius:4px;background:rgba(0,0,0,.06);color:#555}
+
+/* --- Suggestion --- */
+.suggest-day{background:#f8f9fa;border-radius:8px;padding:12px;margin-bottom:10px}
+.suggest-day h4{font-size:13px;font-weight:600;color:#5b9bd5;margin-bottom:8px}
+.suggest-meal{font-size:13px;margin-bottom:4px;padding-left:8px}
+.suggest-meal strong{color:#555;display:inline-block;width:40px}
+.suggest-point{font-size:12px;color:#888;margin-top:6px;padding:6px 8px;background:#e3f2fd;border-radius:4px}
+
+/* --- History --- */
+.history-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:13px}
+.history-item:last-child{border-bottom:none}
+.history-date{width:75px;color:#888;flex-shrink:0;font-size:12px}
+.history-type{width:36px;font-size:16px;text-align:center;flex-shrink:0}
+.history-foods{flex:1;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.history-cal{color:#888;font-size:12px;flex-shrink:0}
+.history-del{width:28px;height:28px;border:none;background:none;color:#ccc;font-size:16px;border-radius:4px}
+.history-del:hover{color:#e74c3c;background:#fce4ec}
+.history-demo{font-size:9px;padding:1px 4px;border-radius:3px;background:#e3f2fd;color:#5b9bd5;margin-left:4px}
+.history-empty{text-align:center;padding:30px;color:#999;font-size:14px}
+.history-actions{display:flex;gap:8px;padding:12px 0;justify-content:flex-end}
+
+/* --- Modal --- */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:12px;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,.15)}
+.modal-header{padding:14px 16px;border-bottom:1px solid #eee;display:flex;align-items:center}
+.modal-header h3{flex:1;font-size:16px}
+.modal-close{width:32px;height:32px;border:none;background:none;font-size:20px;color:#999;border-radius:6px}
+.modal-close:hover{background:#f0f0f0;color:#333}
+.modal-body{padding:16px}
+.modal-footer{padding:12px 16px;border-top:1px solid #eee;display:flex;gap:8px;justify-content:flex-end}
+
+/* --- Confirm Modal Nutrients Table --- */
+.nutrient-edit-table{width:100%;border-collapse:collapse;font-size:13px}
+.nutrient-edit-table th{text-align:left;padding:4px 6px;color:#888;font-size:11px;font-weight:500;border-bottom:1px solid #eee}
+.nutrient-edit-table td{padding:3px 6px;border-bottom:1px solid #f5f5f5}
+.nutrient-edit-table input{width:80px;padding:3px 6px;border:1px solid #ddd;border-radius:4px;text-align:right;font-size:13px}
+.nutrient-edit-group{font-size:11px;color:#fff;padding:2px 8px;border-radius:4px;margin:6px 0 2px;display:inline-block}
+
+/* --- Loading --- */
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:200;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.loading-overlay.show{display:flex}
+.loading-spinner{width:36px;height:36px;border:3px solid #eee;border-top-color:#5b9bd5;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:14px;color:#666}
+
+/* --- Toast --- */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:8px;font-size:13px;color:#fff;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+.toast.success{background:#27ae60}
+.toast.error{background:#e74c3c}
+.toast.info{background:#5b9bd5}
+
+/* --- Demo Prompt --- */
+.demo-prompt{text-align:center;padding:40px 20px}
+.demo-prompt p{font-size:14px;color:#888;margin-bottom:16px}
+
+/* --- Photo Preview --- */
+.photo-preview{max-width:100%;max-height:240px;border-radius:8px;margin:8px 0;display:none;object-fit:contain}
+.photo-preview.show{display:block}
+
+/* --- Footer --- */
+.footer{text-align:center;padding:16px;font-size:11px;color:#aaa;line-height:1.5}
+
+/* --- Custom Period --- */
+.custom-period{display:none;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.custom-period.show{display:flex}
+.custom-period input{width:140px;font-size:12px;padding:6px 8px}
+.custom-period label{font-size:12px;color:#888}
+
+/* --- Empty State --- */
+.empty-state{text-align:center;padding:30px;color:#ccc;font-size:14px}
+
+/* --- Responsive: Tablet --- */
+@media(max-width:640px){
+  .header h1{font-size:15px}
+  .header h1 small{display:none}
+  .container{padding:8px}
+  .card-body{padding:12px}
+  .bar-label{width:72px;font-size:11px}
+  .bar-value{width:50px;font-size:11px}
+  .form-row{flex-direction:column;gap:8px}
+  .form-row > *{width:100%}
+}
+
+/* --- Responsive: Small Phone --- */
+@media(max-width:375px){
+  .header{padding:8px 10px;gap:8px}
+  .header h1{font-size:14px}
+  .bar-label{width:60px;font-size:10px}
+  .bar-value{width:45px;font-size:10px}
+  .bar-track{height:14px}
+  .tab-btn{font-size:12px;padding:8px 4px}
+  .history-date{width:60px;font-size:11px}
+}
