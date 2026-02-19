@@ -106,12 +106,18 @@ textarea{resize:vertical;min-height:80px}
 .alert-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .alert-tag{font-size:11px;padding:1px 6px;border-radius:4px;background:rgba(0,0,0,.06);color:#555}
 
-/* --- Suggestion --- */
-.suggest-day{background:#f8f9fa;border-radius:8px;padding:12px;margin-bottom:10px}
-.suggest-day h4{font-size:13px;font-weight:600;color:#5b9bd5;margin-bottom:8px}
-.suggest-meal{font-size:13px;margin-bottom:4px;padding-left:8px}
-.suggest-meal strong{color:#555;display:inline-block;width:40px}
-.suggest-point{font-size:12px;color:#888;margin-top:6px;padding:6px 8px;background:#e3f2fd;border-radius:4px}
+/* --- Suggestion (structured) --- */
+.sg-day{background:#f8f9fa;border-radius:10px;padding:16px;margin-bottom:14px}
+.sg-day-title{font-size:14px;font-weight:700;color:#5b9bd5;text-align:center;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #e3f2fd}
+.sg-meal{margin-bottom:14px}
+.sg-meal:last-of-type{margin-bottom:8px}
+.sg-meal-header{font-size:13px;font-weight:600;color:#444;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.sg-dish{padding:6px 10px;margin-bottom:4px;background:#fff;border-radius:6px;border-left:3px solid #e0e0e0;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;font-size:13px}
+.sg-cat{font-size:10px;font-weight:600;color:#fff;background:#90a4ae;padding:1px 6px;border-radius:3px;flex-shrink:0}
+.sg-dish-name{font-weight:500;color:#333}
+.sg-amount{font-size:12px;color:#888}
+.sg-tip{width:100%;font-size:11px;color:#5b9bd5;margin-top:2px;padding-left:2px}
+.sg-point{font-size:12px;color:#666;padding:8px 10px;background:#e3f2fd;border-radius:6px;line-height:1.5}
 
 /* --- History --- */
 .history-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:13px}

@@ -687,15 +687,29 @@ suggestBtn.addEventListener('click', async () => {
       return;
     }
 
-    suggestContent.innerHTML = result.days.map(day => `
-      <div class="suggest-day">
-        <h4>${day.day}日目</h4>
-        <div class="suggest-meal"><strong>朝:</strong> ${day.breakfast || '-'}</div>
-        <div class="suggest-meal"><strong>昼:</strong> ${day.lunch || '-'}</div>
-        <div class="suggest-meal"><strong>夕:</strong> ${day.dinner || '-'}</div>
-        ${day.point ? `<div class="suggest-point">${day.point}</div>` : ''}
-      </div>
-    `).join('');
+    suggestContent.innerHTML = result.days.map(day => {
+      const mealLabels = [
+        {key:'breakfast', icon:'🌅', label:'朝食'},
+        {key:'lunch', icon:'☀️', label:'昼食'},
+        {key:'dinner', icon:'🌙', label:'夕食'}
+      ];
+      const mealsHtml = mealLabels.map(ml => {
+        const meal = day[ml.key];
+        if (!meal) return '';
+        // 新構造(dishes配列)と旧構造(文字列)の両方に対応
+        if (typeof meal === 'string') {
+          return `<div class="sg-meal"><div class="sg-meal-header">${ml.icon} ${ml.label}</div><div class="sg-dish"><span class="sg-dish-name">${meal}</span></div></div>`;
+        }
+        const dishes = (meal.dishes || []).map(d => {
+          const cat = d.category ? `<span class="sg-cat">${d.category}</span>` : '';
+          const tip = d.tip ? `<div class="sg-tip">${d.tip}</div>` : '';
+          return `<div class="sg-dish">${cat}<span class="sg-dish-name">${d.name}</span><span class="sg-amount">${d.amount || ''}</span>${tip}</div>`;
+        }).join('');
+        return `<div class="sg-meal"><div class="sg-meal-header">${ml.icon} ${ml.label}</div>${dishes}</div>`;
+      }).join('');
+      const point = day.point ? `<div class="sg-point">${day.point}</div>` : '';
+      return `<div class="sg-day"><div class="sg-day-title">${day.day}日目</div>${mealsHtml}${point}</div>`;
+    }).join('');
   } catch (err) {
     hideLoading();
     handleApiError(err);
