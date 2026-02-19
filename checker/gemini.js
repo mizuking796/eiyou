@@ -8,6 +8,12 @@ const NUTRIENT_PROMPT_KEYS = NUTRIENT_KEYS.map(k => {
   return `"${k}": ${n.name}(${n.unit})`;
 }).join(', ');
 
+// AbortController（外部からキャンセル可能）
+let _currentAbort = null;
+function cancelGemini() {
+  if (_currentAbort) { _currentAbort.abort(); _currentAbort = null; }
+}
+
 // Gemini API呼び出し
 async function callGemini(prompt, imageBase64) {
   const apiKey = localStorage.getItem('eiyou_apikey');
@@ -25,14 +31,30 @@ async function callGemini(prompt, imageBase64) {
 
   const genConfig = {temperature:0.2, responseMimeType:'application/json'};
 
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-      contents: [{parts}],
-      generationConfig: genConfig
-    })
-  });
+  // AbortController: ユーザーキャンセル + 60秒タイムアウト
+  _currentAbort = new AbortController();
+  const timeoutId = setTimeout(() => _currentAbort?.abort(), 60000);
+  const signal = _currentAbort.signal;
+
+  let resp;
+  try {
+    resp = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        contents: [{parts}],
+        generationConfig: genConfig
+      }),
+      signal
+    });
+  } catch (e) {
+    clearTimeout(timeoutId);
+    _currentAbort = null;
+    if (e.name === 'AbortError') throw new Error('CANCELLED');
+    throw e;
+  }
+  clearTimeout(timeoutId);
+  _currentAbort = null;
 
   if (!resp.ok) {
     // エラーレスポンスの詳細を取得

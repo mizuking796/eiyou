@@ -20,63 +20,7 @@
 <!-- ======== Main Content ======== -->
 <div class="container">
 
-  <!-- Dashboard -->
-  <div class="card" id="dashboardCard">
-    <div class="card-header">
-      <h2>栄養バランス</h2>
-      <span class="badge" id="dashPeriodBadge">-</span>
-      <span class="card-toggle">▼</span>
-    </div>
-    <div class="card-body">
-      <div class="period-btns" id="periodBtns">
-        <button class="period-btn active" data-period="today">今日</button>
-        <button class="period-btn" data-period="7days">過去7日</button>
-        <button class="period-btn" data-period="custom">期間指定</button>
-      </div>
-      <div class="custom-period" id="customPeriod">
-        <label>開始</label><input type="date" id="periodStart">
-        <label>〜 終了</label><input type="date" id="periodEnd">
-        <button class="btn btn-sm btn-outline" id="applyPeriod">適用</button>
-      </div>
-      <div id="dashboardContent">
-        <div class="demo-prompt" id="demoPrompt">
-          <p>まだ食事データがありません</p>
-          <button class="btn btn-primary" id="loadDemoBtn">サンプルデータで体験</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Alerts -->
-  <div class="card" id="alertCard" style="display:none">
-    <div class="card-header">
-      <h2>不足・過剰アラート</h2>
-      <span class="badge" id="alertCount">0</span>
-      <span class="card-toggle">▼</span>
-    </div>
-    <div class="card-body" id="alertContent"></div>
-  </div>
-
-  <!-- AI Suggestions -->
-  <div class="card" id="suggestCard" style="display:none">
-    <div class="card-header">
-      <h2>AI献立提案</h2>
-      <span class="card-toggle">▼</span>
-    </div>
-    <div class="card-body">
-      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
-        <select id="suggestDays" style="width:80px;padding:6px;font-size:13px">
-          <option value="1">1日分</option>
-          <option value="3" selected>3日分</option>
-          <option value="7">7日分</option>
-        </select>
-        <button class="btn btn-sm btn-primary" id="suggestBtn">提案を生成</button>
-      </div>
-      <div id="suggestContent" class="empty-state">不足栄養素に基づくAI献立提案</div>
-    </div>
-  </div>
-
-  <!-- Input -->
+  <!-- 1. Input — ユーザーの最初のアクション -->
   <div class="card" id="inputCard">
     <div class="card-header">
       <h2>食事を記録</h2>
@@ -170,7 +114,7 @@
     </div>
   </div>
 
-  <!-- History -->
+  <!-- 2. History — 記録した内容の確認 -->
   <div class="card" id="historyCard">
     <div class="card-header">
       <h2>食事履歴</h2>
@@ -182,7 +126,64 @@
       <div class="history-actions" id="historyActions" style="display:none">
         <button class="btn btn-sm btn-outline" id="csvBtn">CSV出力</button>
         <button class="btn btn-sm btn-danger" id="clearDemoBtn" style="display:none">デモデータ削除</button>
+        <button class="btn btn-sm btn-danger" id="resetAllBtn">全データリセット</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 3. Dashboard — データが溜まったら分析 -->
+  <div class="card" id="dashboardCard">
+    <div class="card-header">
+      <h2>栄養バランス</h2>
+      <span class="badge" id="dashPeriodBadge">-</span>
+      <span class="card-toggle">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="period-btns" id="periodBtns">
+        <button class="period-btn active" data-period="today">今日</button>
+        <button class="period-btn" data-period="7days">過去7日</button>
+        <button class="period-btn" data-period="custom">期間指定</button>
+      </div>
+      <div class="custom-period" id="customPeriod">
+        <label>開始</label><input type="date" id="periodStart">
+        <label>〜 終了</label><input type="date" id="periodEnd">
+        <button class="btn btn-sm btn-outline" id="applyPeriod">適用</button>
+      </div>
+      <div id="dashboardContent">
+        <div class="demo-prompt" id="demoPrompt">
+          <p>まだ食事データがありません</p>
+          <button class="btn btn-primary" id="loadDemoBtn">サンプルデータで体験</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Alerts — 問題の発見 -->
+  <div class="card" id="alertCard" style="display:none">
+    <div class="card-header">
+      <h2>不足・過剰アラート</h2>
+      <span class="badge" id="alertCount">0</span>
+      <span class="card-toggle">▼</span>
+    </div>
+    <div class="card-body" id="alertContent"></div>
+  </div>
+
+  <!-- 5. AI Suggestions — 改善アクション -->
+  <div class="card" id="suggestCard" style="display:none">
+    <div class="card-header">
+      <h2>AI献立提案</h2>
+      <span class="card-toggle">▼</span>
+    </div>
+    <div class="card-body">
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+        <select id="suggestDays" style="width:80px;padding:6px;font-size:13px">
+          <option value="1">1日分</option>
+          <option value="3" selected>3日分</option>
+          <option value="7">7日分</option>
+        </select>
+        <button class="btn btn-sm btn-primary" id="suggestBtn">提案を生成</button>
+      </div>
+      <div id="suggestContent" class="empty-state">不足栄養素に基づくAI献立提案</div>
     </div>
   </div>
 
@@ -282,6 +283,8 @@
 <div class="loading-overlay" id="loadingOverlay">
   <div class="loading-spinner"></div>
   <div class="loading-text" id="loadingText">解析中...</div>
+  <div class="loading-tip" id="loadingTip"></div>
+  <button class="btn btn-sm btn-outline loading-cancel" id="loadingCancel">キャンセル</button>
 </div>
 
 <!-- ======== Toast ======== -->

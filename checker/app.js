@@ -22,13 +22,71 @@ function saveProfile(p) {
   localStorage.setItem('eiyou_profile', JSON.stringify(p));
 }
 
+// --- 栄養豆知識（ローディング中に表示） ---
+const NUTRITION_TIPS = [
+  'ビタミンCは鉄の吸収を高めます。レモンやピーマンと一緒に！',
+  'カルシウムの吸収にはビタミンDが必要です。日光浴も大切',
+  '食物繊維は腸内環境を整え、血糖値の急上昇を抑えます',
+  '亜鉛は味覚に関わるミネラル。牡蠣や牛肉に豊富です',
+  'ビタミンB12は植物性食品にはほとんど含まれません',
+  '葉酸は妊娠前から摂取が推奨されるビタミンです',
+  'タンパク質は体重1kgあたり約0.8〜1.0g/日が目安',
+  'ナトリウムの過剰摂取は高血圧のリスクを高めます',
+  'マグネシウムは筋肉の弛緩とエネルギー代謝に関与します',
+  'ビタミンAは目の健康に重要。にんじんやレバーに豊富',
+  'ビタミンEは抗酸化作用があり、細胞膜を保護します',
+  'カリウムはナトリウムの排出を促し、血圧調整に役立ちます',
+  'ビタミンKは血液凝固と骨の形成に必要なビタミンです',
+  '鉄分不足は疲労感や集中力低下の原因になります',
+  'ビタミンB1不足は「脚気」の原因。豚肉や玄米に豊富',
+  'セレンは甲状腺ホルモンの代謝に関わる微量ミネラルです',
+  '必須アミノ酸は体内で合成できない9種のアミノ酸です',
+  'パントテン酸はストレス対策のビタミンとも呼ばれます',
+  'ビオチンは皮膚や髪の健康維持に重要なビタミンです',
+  'リンはカルシウムと結合して骨や歯の主成分になります',
+  '銅は鉄の代謝を助け、貧血予防に関与します',
+  'ヨウ素は海藻類に多く含まれ、甲状腺機能に必須です',
+  'モリブデンは肝臓での解毒反応に関わる酵素の成分です',
+  'クロムはインスリンの働きを助け、血糖値の調整に関与します',
+  'マンガンは骨の形成と糖質・脂質の代謝に関わります',
+  'ナイアシン不足はペラグラ（皮膚炎・下痢・認知症）の原因',
+  'ビタミンB6はタンパク質の代謝に必要。鶏肉やバナナに豊富',
+  'トリプトファンはセロトニンの原料。睡眠の質にも関わります',
+  '日本人の食事摂取基準は5年ごとに改訂されます',
+  '1日に必要な水分量は体重1kgあたり約30〜35mL',
+];
+
 // --- UI Utilities ---
+let _tipTimer = null;
+let _tipIndex = 0;
+
 function showLoading(msg) {
+  const overlay = document.getElementById('loadingOverlay');
   document.getElementById('loadingText').textContent = msg || '処理中...';
-  document.getElementById('loadingOverlay').classList.add('show');
+  const tipEl = document.getElementById('loadingTip');
+  // ランダム開始 + 4秒ローテーション
+  _tipIndex = Math.floor(Math.random() * NUTRITION_TIPS.length);
+  if (tipEl) {
+    tipEl.textContent = NUTRITION_TIPS[_tipIndex];
+    tipEl.classList.remove('fade');
+  }
+  clearInterval(_tipTimer);
+  _tipTimer = setInterval(() => {
+    if (!tipEl) return;
+    tipEl.classList.add('fade');
+    setTimeout(() => {
+      _tipIndex = (_tipIndex + 1) % NUTRITION_TIPS.length;
+      tipEl.textContent = NUTRITION_TIPS[_tipIndex];
+      tipEl.classList.remove('fade');
+    }, 300);
+  }, 4000);
+  overlay.classList.add('show');
 }
+
 function hideLoading() {
   document.getElementById('loadingOverlay').classList.remove('show');
+  clearInterval(_tipTimer);
+  _tipTimer = null;
 }
 function showToast(msg, type) {
   const t = document.getElementById('toast');
@@ -305,7 +363,9 @@ function checkApiKey() {
 function handleApiError(err) {
   const msg = err.message || '';
   console.error('API Error:', msg, err);
-  if (msg === 'API_KEY_MISSING') {
+  if (msg === 'CANCELLED') {
+    showToast('キャンセルしました', 'info');
+  } else if (msg === 'API_KEY_MISSING') {
     showToast('APIキーが未設定です', 'error');
     openModal('settingsModal');
   } else if (msg === 'API_KEY_INVALID') {
@@ -752,6 +812,13 @@ document.getElementById('clearDemoBtn').addEventListener('click', () => {
   renderAll();
 });
 
+document.getElementById('resetAllBtn').addEventListener('click', () => {
+  if (!confirm('全ての食事データを削除します。よろしいですか？')) return;
+  saveMeals([]);
+  showToast('全データをリセットしました', 'info');
+  renderAll();
+});
+
 // ============================================================
 // RENDER ALL
 // ============================================================
@@ -764,6 +831,12 @@ function renderAll() {
 // INIT
 // ============================================================
 (function init() {
+  // Cancel button
+  document.getElementById('loadingCancel').addEventListener('click', () => {
+    cancelGemini();
+    hideLoading();
+  });
+
   // Set default dates
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('formDate').value = today;
