@@ -92,6 +92,7 @@ const profileWeight = document.getElementById('profileWeight');
 
 settingsBtn.addEventListener('click', () => {
   apiKeyInput.value = localStorage.getItem('eiyou_apikey') || '';
+  document.getElementById('modelSelect').value = localStorage.getItem('eiyou_model') || 'gemini-2.0-flash-lite';
   const p = loadProfile();
   profileAge.value = p.age;
   profileSex.value = p.sex;
@@ -110,6 +111,8 @@ saveSettingsBtn.addEventListener('click', () => {
   const key = apiKeyInput.value.trim();
   if (key) localStorage.setItem('eiyou_apikey', key);
   else localStorage.removeItem('eiyou_apikey');
+
+  localStorage.setItem('eiyou_model', document.getElementById('modelSelect').value);
 
   saveProfile({
     age: Number(profileAge.value) || 35,

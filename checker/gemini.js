@@ -19,8 +19,9 @@ async function callGemini(prompt, imageBase64) {
   }
   parts.push({text: prompt});
 
-  // APIキーはURLパラメータで送信（ブラウザからはヘッダーよりCORS安全）
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+  // モデル名（設定から取得、デフォルトgemini-2.0-flash-lite）
+  const model = localStorage.getItem('eiyou_model') || 'gemini-2.0-flash-lite';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const resp = await fetch(url, {
     method: 'POST',
