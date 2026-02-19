@@ -369,12 +369,28 @@ textAnalyzeBtn.addEventListener('click', async () => {
 // --- API Key Check ---
 function checkApiKey() {
   if (!localStorage.getItem('eiyou_apikey')) {
-    showToast('設定からGemini APIキーを入力してください', 'error');
-    openModal('settingsModal');
+    openModal('apiKeyModal');
     return false;
   }
   return true;
 }
+
+document.getElementById('apiKeySetupBtn').addEventListener('click', () => {
+  closeModal('apiKeyModal');
+  // ガイドを展開した状態で設定を開く
+  const guide = document.getElementById('apiGuide');
+  const btn = document.getElementById('toggleGuide');
+  guide.style.display = '';
+  btn.textContent = 'ガイドを閉じる';
+  apiKeyInput.value = localStorage.getItem('eiyou_apikey') || '';
+  document.getElementById('modelSelect').value = localStorage.getItem('eiyou_model') || 'gemini-2.5-flash';
+  const p = loadProfile();
+  profileAge.value = p.age;
+  profileSex.value = p.sex;
+  profileActivity.value = p.activityLevel;
+  profileWeight.value = p.bodyWeight;
+  openModal('settingsModal');
+});
 
 function handleApiError(err) {
   const msg = err.message || '';

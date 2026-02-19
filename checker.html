@@ -332,6 +332,45 @@
   </div>
 </div>
 
+<!-- ======== API Key Required Modal ======== -->
+<div class="modal-overlay" id="apiKeyModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h3>Gemini APIキーが必要です</h3>
+      <button class="modal-close" data-close="apiKeyModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="apikey-intro">
+        <p>食事の栄養素解析・写真認識・AI献立提案には<strong>Google Gemini API</strong>を使用します。</p>
+        <p>APIキーは<strong>無料</strong>で取得でき、<strong>3分</strong>で完了します。</p>
+      </div>
+      <div class="apikey-features">
+        <div class="apikey-feature">
+          <span class="apikey-feature-icon">&#x1f50d;</span>
+          <span>食材・メニューから栄養素を自動推定</span>
+        </div>
+        <div class="apikey-feature">
+          <span class="apikey-feature-icon">&#x1f4f7;</span>
+          <span>食事の写真から食品を自動認識</span>
+        </div>
+        <div class="apikey-feature">
+          <span class="apikey-feature-icon">&#x1f4ac;</span>
+          <span>「昨日ラーメン食べた」等の自然文を解析</span>
+        </div>
+        <div class="apikey-feature">
+          <span class="apikey-feature-icon">&#x1f372;</span>
+          <span>不足栄養素を補うAI献立提案</span>
+        </div>
+      </div>
+      <div class="apikey-privacy">キーはこの端末にのみ保存されます。外部サーバーには送信されません。</div>
+    </div>
+    <div class="modal-footer" style="flex-direction:column;gap:8px">
+      <button class="btn btn-primary btn-block" id="apiKeySetupBtn">設定を開いてAPIキーを登録</button>
+      <button class="btn btn-outline btn-block" data-close="apiKeyModal" style="font-size:12px">あとで設定する</button>
+    </div>
+  </div>
+</div>
+
 <!-- ======== Loading ======== -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="loading-spinner"></div>
