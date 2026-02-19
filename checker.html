@@ -20,6 +20,12 @@
 <!-- ======== Main Content ======== -->
 <div class="container">
 
+  <!-- 0. Demo Banner — データなし時のみ表示 -->
+  <div class="demo-banner" id="demoBanner">
+    <p>初めての方へ — サンプル食事データで機能を体験できます</p>
+    <button class="btn btn-primary" id="loadDemoBtn">サンプルデータで体験</button>
+  </div>
+
   <!-- 1. Input — ユーザーの最初のアクション -->
   <div class="card" id="inputCard">
     <div class="card-header">
@@ -149,12 +155,7 @@
         <label>〜 終了</label><input type="date" id="periodEnd">
         <button class="btn btn-sm btn-outline" id="applyPeriod">適用</button>
       </div>
-      <div id="dashboardContent">
-        <div class="demo-prompt" id="demoPrompt">
-          <p>まだ食事データがありません</p>
-          <button class="btn btn-primary" id="loadDemoBtn">サンプルデータで体験</button>
-        </div>
-      </div>
+      <div id="dashboardContent"></div>
     </div>
   </div>
 

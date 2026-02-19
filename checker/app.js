@@ -529,8 +529,7 @@ function renderDashboard() {
   const demoPrompt = document.getElementById('demoPrompt');
 
   if (loadMeals().length === 0) {
-    content.innerHTML = '';
-    content.appendChild(createDemoPrompt());
+    content.innerHTML = '<div class="empty-state">食事を記録するとここに栄養バランスが表示されます</div>';
     return;
   }
 
@@ -595,18 +594,6 @@ function renderDashboard() {
 
   // Render alerts
   renderAlerts(daily, rda);
-}
-
-function createDemoPrompt() {
-  const div = document.createElement('div');
-  div.className = 'demo-prompt';
-  div.innerHTML = `
-    <p>まだ食事データがありません</p>
-    <button class="btn btn-primary" id="loadDemoBtn2">サンプルデータで体験</button>
-    <p style="font-size:12px;color:#bbb;margin-top:8px">5日分のサンプル食事データを読み込みます</p>
-  `;
-  div.querySelector('#loadDemoBtn2').addEventListener('click', onLoadDemo);
-  return div;
 }
 
 // ============================================================
@@ -823,6 +810,9 @@ document.getElementById('resetAllBtn').addEventListener('click', () => {
 // RENDER ALL
 // ============================================================
 function renderAll() {
+  // デモバナー: データなし時のみ表示
+  const banner = document.getElementById('demoBanner');
+  if (banner) banner.style.display = loadMeals().length === 0 ? '' : 'none';
   renderDashboard();
   renderHistory();
 }
