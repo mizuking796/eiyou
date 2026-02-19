@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>栄養素データベース | Nutrition Database</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.4/cytoscape.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:#f8f9fa;color:#333;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{background:#fff;border-bottom:1px solid #e0e0e0;padding:8px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:10}
+header h1{font-size:16px;font-weight:700;white-space:nowrap;color:#2c3e50}
+header h1 span{color:#888;font-weight:400;font-size:12px;margin-left:4px}
+.search-box{flex:1;max-width:360px;position:relative}
+.search-box input{width:100%;padding:6px 12px 6px 32px;border:1px solid #ddd;border-radius:20px;font-size:13px;outline:none;transition:border-color .2s}
+.search-box input:focus{border-color:#5b9bd5}
+.search-box::before{content:'🔍';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px}
+.header-controls{display:flex;gap:8px;align-items:center;margin-left:auto}
+.header-controls select,.header-controls button{padding:5px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;background:#fff;cursor:pointer}
+.header-controls button:hover{background:#f0f0f0}
+.header-controls button.active{background:#5b9bd5;color:#fff;border-color:#5b9bd5}
+.main{display:flex;flex:1;overflow:hidden}
+.left-panel{width:200px;background:#fff;border-right:1px solid #e0e0e0;padding:12px;overflow-y:auto;flex-shrink:0}
+.left-panel h3{font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;margin:12px 0 6px;padding-bottom:4px;border-bottom:1px solid #eee}
+.left-panel h3:first-child{margin-top:0}
+.filter-group label{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:13px;cursor:pointer}
+.filter-group label:hover{color:#5b9bd5}
+.filter-group input[type=checkbox]{accent-color:#5b9bd5}
+.color-dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
+.reverse-section{margin-top:16px}
+.reverse-btn{width:100%;padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:6px;font-size:12px;background:#fff;cursor:pointer;text-align:left;transition:all .2s}
+.reverse-btn:hover{background:#f0f7ff;border-color:#5b9bd5}
+.reverse-btn.active{background:#5b9bd5;color:#fff;border-color:#5b9bd5}
+.reverse-input{width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;margin:4px 0;outline:none;display:none}
+.reverse-input.show{display:block}
+.reverse-results{font-size:11px;color:#666;margin-top:4px;max-height:200px;overflow-y:auto}
+.reverse-results .result-item{padding:4px 6px;border-radius:4px;cursor:pointer;margin:2px 0}
+.reverse-results .result-item:hover{background:#f0f7ff}
+.graph-container{flex:1;position:relative;background:#fafbfc}
+#cy{width:100%;height:100%}
+.legend{position:absolute;bottom:12px;left:12px;background:rgba(255,255,255,.92);border-radius:8px;padding:8px 12px;font-size:11px;box-shadow:0 1px 4px rgba(0,0,0,.1);display:flex;gap:12px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:4px}
+.legend-line{width:24px;height:2px;display:inline-block}
+.right-panel{width:300px;background:#fff;border-left:1px solid #e0e0e0;overflow-y:auto;flex-shrink:0;transition:transform .3s}
+.right-panel.empty{display:flex;align-items:center;justify-content:center}
+.right-panel.empty .placeholder{text-align:center;color:#bbb;font-size:13px}
+.detail-header{padding:16px;border-bottom:1px solid #eee}
+.detail-header .cat-badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;color:#fff;margin-bottom:6px}
+.detail-header h2{font-size:18px;margin-bottom:2px}
+.detail-header .name-en{font-size:12px;color:#999}
+.detail-header .desc{font-size:12px;color:#666;margin-top:8px;line-height:1.5}
+.detail-section{padding:12px 16px;border-bottom:1px solid #f0f0f0}
+.detail-section h4{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.detail-section .info-row{font-size:12px;color:#555;margin:4px 0;line-height:1.5}
+.detail-section .tag{display:inline-block;background:#f5f5f5;padding:2px 6px;border-radius:4px;font-size:11px;margin:2px;color:#555}
+.detail-section .tag.deficiency{background:#fff3e0;color:#e65100}
+.detail-section .tag.excess{background:#fce4ec;color:#c62828}
+.food-item{display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid #f8f8f8}
+.food-item:last-child{border-bottom:none}
+.food-name{color:#333}
+.food-amount{color:#999;font-size:11px}
+.relation-item{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;cursor:pointer;border-radius:4px;padding:4px 6px}
+.relation-item:hover{background:#f0f7ff}
+.relation-type{font-size:10px;padding:1px 6px;border-radius:8px;color:#fff;flex-shrink:0}
+.relation-type.synergy{background:#4caf50}
+.relation-type.absorption{background:#2196f3}
+.relation-type.antagonist{background:#f44336}
+.stat-bar{height:4px;background:#eee;border-radius:2px;margin-top:4px;overflow:hidden}
+.stat-fill{height:100%;border-radius:2px;transition:width .3s}
+.tooltip{position:absolute;background:rgba(44,62,80,.9);color:#fff;padding:6px 10px;border-radius:6px;font-size:12px;pointer-events:none;z-index:100;white-space:nowrap;display:none}
+@media(max-width:900px){.left-panel{width:160px}.right-panel{width:260px}}
+@media(max-width:640px){.left-panel{display:none}.right-panel{position:absolute;right:0;top:0;bottom:0;z-index:20;transform:translateX(100%)}.right-panel.open{transform:translateX(0)}}
+</style>
+</head>
+<body>
+<header>
+  <h1>栄養素データベース<span>46 Essential Nutrients</span></h1>
+  <div class="search-box"><input type="text" id="searchInput" placeholder="栄養素を検索（日本語 / English）..."></div>
+  <div class="header-controls">
+    <select id="layoutSelect">
+      <option value="cluster">クラスター</option>
+      <option value="concentric">同心円</option>
+      <option value="subcategory">サブカテゴリ</option>
+      <option value="force">フォース</option>
+    </select>
+    <button id="fitBtn" title="全体表示">全体表示</button>
+  </div>
+</header>
+<div class="main">
+  <div class="left-panel">
+    <h3>カテゴリ</h3>
+    <div class="filter-group" id="catFilters">
+      <label><input type="checkbox" checked data-cat="vitamin"><span class="color-dot" style="background:#e67e22"></span>ビタミン (18)</label>
+      <label><input type="checkbox" checked data-cat="mineral"><span class="color-dot" style="background:#27ae60"></span>ミネラル (20)</label>
+      <label><input type="checkbox" checked data-cat="aminoAcid"><span class="color-dot" style="background:#8e44ad"></span>アミノ酸 (8)</label>
+    </div>
+    <h3>サブカテゴリ</h3>
+    <div class="filter-group" id="subFilters">
+      <label><input type="checkbox" checked data-sub="脂溶性"><span class="color-dot" style="background:#e67e22"></span>脂溶性ビタミン</label>
+      <label><input type="checkbox" checked data-sub="水溶性"><span class="color-dot" style="background:#3498db"></span>水溶性ビタミン</label>
+      <label><input type="checkbox" checked data-sub="主要ミネラル"><span class="color-dot" style="background:#27ae60"></span>主要ミネラル</label>
+      <label><input type="checkbox" checked data-sub="微量ミネラル"><span class="color-dot" style="background:#16a085"></span>微量ミネラル</label>
+      <label><input type="checkbox" checked data-sub="必須アミノ酸"><span class="color-dot" style="background:#8e44ad"></span>必須アミノ酸</label>
+    </div>
+    <h3>エッジ表示</h3>
+    <div class="filter-group" id="edgeFilters">
+      <label><input type="checkbox" checked data-edge="synergy"><span class="legend-line" style="background:#4caf50"></span>相乗</label>
+      <label><input type="checkbox" checked data-edge="absorption"><span class="legend-line" style="background:#2196f3;border-top:2px dashed #2196f3;height:0"></span>吸収促進</label>
+      <label><input type="checkbox" checked data-edge="antagonist"><span class="legend-line" style="background:#f44336;border-top:2px dotted #f44336;height:0"></span>拮抗</label>
+    </div>
+    <div class="reverse-section">
+      <h3>逆引き検索</h3>
+      <button class="reverse-btn" id="foodSearchBtn">食材 → 栄養素</button>
+      <input type="text" class="reverse-input" id="foodSearchInput" placeholder="食材名を入力...">
+      <div class="reverse-results" id="foodResults"></div>
+      <button class="reverse-btn" id="symptomSearchBtn">症状 → 栄養素</button>
+      <input type="text" class="reverse-input" id="symptomSearchInput" placeholder="症状を入力...">
+      <div class="reverse-results" id="symptomResults"></div>
+    </div>
+  </div>
+  <div class="graph-container">
+    <div id="cy"></div>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-line" style="background:#4caf50"></span>相乗</div>
+      <div class="legend-item"><span class="legend-line" style="background:#2196f3;border-top:2px dashed #2196f3;height:0"></span>吸収促進</div>
+      <div class="legend-item"><span class="legend-line" style="background:#f44336;border-top:2px dotted #f44336;height:0"></span>拮抗</div>
+    </div>
+  </div>
+  <div class="right-panel empty" id="detailPanel">
+    <div class="placeholder">ノードをクリックして<br>詳細を表示</div>
+    <div class="detail-content" style="display:none"></div>
+  </div>
+</div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ============================================================
+// DATA: 46 Essential Nutrients
+// ============================================================
+const nutrients = [
+  // === VITAMINS: Fat-soluble (脂溶性) ===
+  {id:"vitA",name:"ビタミンA",nameEn:"Vitamin A",category:"vitamin",subCategory:"脂溶性",unit:"μgRAE",rda:"650〜900",deficiency:"夜盲症、角膜乾燥症、皮膚乾燥、免疫力低下、成長障害",excess:"頭痛、吐き気、肝障害、骨粗鬆症リスク、催奇形性",foods:[{name:"鶏レバー",amount:"14,000μg/100g"},{name:"うなぎ蒲焼",amount:"1,500μg/100g"},{name:"にんじん",amount:"720μg/100g"},{name:"ほうれん草",amount:"350μg/100g"},{name:"かぼちゃ",amount:"330μg/100g"}],description:"視覚・皮膚・粘膜の健康維持に必須。β-カロテンから体内変換される。抗酸化作用、免疫機能の維持に重要。"},
+  {id:"vitD",name:"ビタミンD",nameEn:"Vitamin D",category:"vitamin",subCategory:"脂溶性",unit:"μg",rda:"8.5",deficiency:"くる病（小児）、骨軟化症、骨粗鬆症、免疫力低下",excess:"高カルシウム血症、腎障害、食欲不振、嘔吐",foods:[{name:"しらす干し",amount:"61μg/100g"},{name:"紅鮭",amount:"33μg/100g"},{name:"さんま",amount:"16μg/100g"},{name:"干し椎茸",amount:"17μg/100g"},{name:"卵黄",amount:"5.9μg/100g"}],description:"カルシウム・リンの吸収を促進し骨の健康を維持。日光浴で皮膚から合成される。免疫調節作用も注目されている。"},
+  {id:"vitE",name:"ビタミンE",nameEn:"Vitamin E",category:"vitamin",subCategory:"脂溶性",unit:"mg",rda:"5.0〜7.0",deficiency:"溶血性貧血、神経障害、筋力低下、不妊",excess:"出血傾向（稀）、筋力低下",foods:[{name:"アーモンド",amount:"31mg/100g"},{name:"ひまわり油",amount:"39mg/100g"},{name:"かぼちゃ",amount:"5.1mg/100g"},{name:"ほうれん草",amount:"2.1mg/100g"},{name:"アボカド",amount:"3.3mg/100g"}],description:"強力な抗酸化作用で細胞膜を酸化ストレスから保護。血行促進、老化防止。ビタミンCにより再生される。"},
+  {id:"vitK",name:"ビタミンK",nameEn:"Vitamin K",category:"vitamin",subCategory:"脂溶性",unit:"μg",rda:"150",deficiency:"出血傾向、骨粗鬆症、新生児出血症",excess:"報告はほとんどない",foods:[{name:"納豆",amount:"600μg/100g"},{name:"モロヘイヤ",amount:"640μg/100g"},{name:"小松菜",amount:"210μg/100g"},{name:"ほうれん草",amount:"270μg/100g"},{name:"ブロッコリー",amount:"160μg/100g"}],description:"血液凝固に必須の因子。骨へのカルシウム定着を促進するオステオカルシンの活性化にも関与。腸内細菌でも産生される。"},
+
+  // === VITAMINS: Water-soluble (水溶性) ===
+  {id:"vitB1",name:"ビタミンB1",nameEn:"Vitamin B1 (Thiamine)",category:"vitamin",subCategory:"水溶性",unit:"mg",rda:"1.1〜1.4",deficiency:"脚気、ウェルニッケ脳症、倦怠感、食欲不振、神経障害",excess:"過剰症の報告は稀",foods:[{name:"豚ヒレ肉",amount:"1.32mg/100g"},{name:"うなぎ蒲焼",amount:"0.75mg/100g"},{name:"玄米",amount:"0.41mg/100g"},{name:"大豆",amount:"0.83mg/100g"},{name:"落花生",amount:"0.85mg/100g"}],description:"糖質代謝に不可欠な補酵素。エネルギー産生、神経機能の維持に重要。アルコール多飲で消耗が増加。"},
+  {id:"vitB2",name:"ビタミンB2",nameEn:"Vitamin B2 (Riboflavin)",category:"vitamin",subCategory:"水溶性",unit:"mg",rda:"1.2〜1.6",deficiency:"口角炎、口内炎、舌炎、皮膚炎、成長障害",excess:"過剰症の報告は稀（尿が黄色くなる）",foods:[{name:"豚レバー",amount:"3.60mg/100g"},{name:"うなぎ蒲焼",amount:"0.74mg/100g"},{name:"納豆",amount:"0.56mg/100g"},{name:"牛乳",amount:"0.15mg/100g"},{name:"卵",amount:"0.43mg/100g"}],description:"脂質・タンパク質・糖質の代謝に関与する補酵素。皮膚・粘膜の健康維持。「発育のビタミン」とも呼ばれる。"},
+  {id:"vitB3",name:"ナイアシン",nameEn:"Niacin (Vitamin B3)",category:"vitamin",subCategory:"水溶性",unit:"mgNE",rda:"11〜15",deficiency:"ペラグラ（皮膚炎・下痢・認知症の3D症状）、口内炎",excess:"皮膚紅潮（フラッシング）、肝障害",foods:[{name:"たらこ",amount:"49mg/100g"},{name:"鶏むね肉",amount:"12mg/100g"},{name:"まぐろ赤身",amount:"14mg/100g"},{name:"落花生",amount:"17mg/100g"},{name:"エリンギ",amount:"6.1mg/100g"}],description:"エネルギー代謝に関わる補酵素NAD/NADPの構成成分。トリプトファンから体内合成も可能。500以上の酵素反応に関与。"},
+  {id:"vitB5",name:"パントテン酸",nameEn:"Pantothenic Acid (Vitamin B5)",category:"vitamin",subCategory:"水溶性",unit:"mg",rda:"5〜6",deficiency:"疲労感、手足のしびれ、頭痛、不眠（欠乏は稀）",excess:"下痢（大量摂取時）",foods:[{name:"鶏レバー",amount:"10.1mg/100g"},{name:"納豆",amount:"3.6mg/100g"},{name:"卵黄",amount:"4.3mg/100g"},{name:"アボカド",amount:"1.6mg/100g"},{name:"干し椎茸",amount:"7.9mg/100g"}],description:"補酵素Aの構成成分として脂肪酸代謝・エネルギー産生に必須。副腎皮質ホルモンの合成にも関与。広く食品に含まれる。"},
+  {id:"vitB6",name:"ビタミンB6",nameEn:"Vitamin B6 (Pyridoxine)",category:"vitamin",subCategory:"水溶性",unit:"mg",rda:"1.1〜1.4",deficiency:"皮膚炎、貧血、免疫力低下、神経障害、口角炎",excess:"末梢神経障害（大量長期摂取時）",foods:[{name:"にんにく",amount:"1.53mg/100g"},{name:"まぐろ赤身",amount:"0.85mg/100g"},{name:"鶏ささみ",amount:"0.66mg/100g"},{name:"バナナ",amount:"0.38mg/100g"},{name:"さんま",amount:"0.54mg/100g"}],description:"アミノ酸代謝の補酵素として100以上の酵素反応に関与。神経伝達物質の合成、ヘモグロビン合成にも重要。"},
+  {id:"vitB7",name:"ビオチン",nameEn:"Biotin (Vitamin B7)",category:"vitamin",subCategory:"水溶性",unit:"μg",rda:"50",deficiency:"脱毛、皮膚炎、結膜炎、筋肉痛、うつ症状",excess:"過剰症の報告なし",foods:[{name:"鶏レバー",amount:"232μg/100g"},{name:"落花生",amount:"92μg/100g"},{name:"卵黄",amount:"65μg/100g"},{name:"大豆",amount:"28μg/100g"},{name:"玉ねぎ",amount:"16μg/100g"}],description:"糖新生・脂肪酸合成・アミノ酸代謝に関与するカルボキシラーゼの補酵素。皮膚・毛髪の健康維持。腸内細菌でも合成。"},
+  {id:"vitB9",name:"葉酸",nameEn:"Folic Acid (Vitamin B9)",category:"vitamin",subCategory:"水溶性",unit:"μg",rda:"240（妊婦480）",deficiency:"巨赤芽球性貧血、胎児神経管閉鎖障害、動脈硬化リスク上昇",excess:"ビタミンB12欠乏の隠蔽（大量摂取時）",foods:[{name:"鶏レバー",amount:"1,300μg/100g"},{name:"枝豆",amount:"260μg/100g"},{name:"ほうれん草",amount:"210μg/100g"},{name:"ブロッコリー",amount:"210μg/100g"},{name:"いちご",amount:"90μg/100g"}],description:"DNA合成・細胞分裂に不可欠。妊娠初期の摂取が特に重要。ビタミンB12と協働して赤血球を形成。"},
+  {id:"vitB12",name:"ビタミンB12",nameEn:"Vitamin B12 (Cobalamin)",category:"vitamin",subCategory:"水溶性",unit:"μg",rda:"2.4",deficiency:"悪性貧血、末梢神経障害、認知機能低下、舌炎",excess:"過剰症の報告は稀",foods:[{name:"しじみ",amount:"62μg/100g"},{name:"牛レバー",amount:"53μg/100g"},{name:"あさり",amount:"52μg/100g"},{name:"さんま",amount:"16μg/100g"},{name:"海苔",amount:"58μg/100g"}],description:"赤血球形成・神経機能維持に必須。コバルトを含む唯一のビタミン。動物性食品にのみ含まれ、菜食主義者は欠乏リスクあり。"},
+  {id:"vitC",name:"ビタミンC",nameEn:"Vitamin C (Ascorbic Acid)",category:"vitamin",subCategory:"水溶性",unit:"mg",rda:"100",deficiency:"壊血病、歯肉出血、倦怠感、免疫力低下、傷の治りが遅い",excess:"下痢、腹痛、尿路結石（大量摂取時）",foods:[{name:"赤ピーマン",amount:"170mg/100g"},{name:"キウイ",amount:"140mg/100g"},{name:"ブロッコリー",amount:"140mg/100g"},{name:"いちご",amount:"62mg/100g"},{name:"レモン",amount:"100mg/100g"}],description:"強力な抗酸化作用。コラーゲン合成に必須。非ヘム鉄の吸収促進、免疫機能の強化、ビタミンEの再生にも関与。"},
+  {id:"choline",name:"コリン",nameEn:"Choline",category:"vitamin",subCategory:"水溶性",unit:"mg",rda:"400〜550",deficiency:"脂肪肝、筋障害、記憶力低下",excess:"低血圧、発汗、魚臭様体臭",foods:[{name:"卵黄",amount:"680mg/100g"},{name:"牛レバー",amount:"420mg/100g"},{name:"大豆",amount:"120mg/100g"},{name:"鶏むね肉",amount:"78mg/100g"},{name:"ブロッコリー",amount:"40mg/100g"}],description:"神経伝達物質アセチルコリンの前駆体。細胞膜の構成成分レシチンの材料。肝臓の脂肪代謝を補助。"},
+  {id:"inositol",name:"イノシトール",nameEn:"Inositol",category:"vitamin",subCategory:"水溶性",unit:"mg",rda:"500〜1000（目安）",deficiency:"脂肪肝、動脈硬化、抜け毛、湿疹",excess:"胃腸障害（大量摂取時）",foods:[{name:"オレンジ",amount:"210mg/100g"},{name:"グレープフルーツ",amount:"199mg/100g"},{name:"すいか",amount:"46mg/100g"},{name:"桃",amount:"21mg/100g"},{name:"メロン",amount:"25mg/100g"}],description:"細胞膜のリン脂質の構成成分。脂肪の代謝を促進し脂肪肝を予防。神経機能の維持にも関与。体内でグルコースから合成可能。"},
+  {id:"rutin",name:"ルチン",nameEn:"Rutin (Vitamin P)",category:"vitamin",subCategory:"水溶性",unit:"mg",rda:"30（目安）",deficiency:"毛細血管が脆くなる、出血しやすい",excess:"報告はほとんどない",foods:[{name:"そば",amount:"15mg/100g"},{name:"柑橘類の皮",amount:"高含有"},{name:"アスパラガス",amount:"含有"},{name:"いちじく",amount:"含有"},{name:"トマト",amount:"含有"}],description:"フラボノイドの一種。毛細血管を強化し出血を予防。ビタミンCの吸収・作用を助ける。抗酸化・抗炎症作用。"},
+  {id:"paba",name:"PABA",nameEn:"Para-Aminobenzoic Acid",category:"vitamin",subCategory:"水溶性",unit:"mg",rda:"明確な基準なし",deficiency:"白髪、皮膚障害、疲労感",excess:"吐き気、下痢（大量摂取時）",foods:[{name:"レバー",amount:"高含有"},{name:"全粒穀物",amount:"含有"},{name:"卵",amount:"含有"},{name:"ほうれん草",amount:"含有"},{name:"きのこ類",amount:"含有"}],description:"葉酸の構成成分。腸内細菌による葉酸合成に必要。紫外線防御効果があり日焼け止めにも使用。"},
+  {id:"lipoicAcid",name:"α-リポ酸",nameEn:"Alpha-Lipoic Acid",category:"vitamin",subCategory:"水溶性",unit:"mg",rda:"100〜300（目安）",deficiency:"エネルギー代謝低下、血糖値上昇",excess:"胃腸障害、皮膚発疹（稀）",foods:[{name:"レバー",amount:"含有"},{name:"ほうれん草",amount:"含有"},{name:"ブロッコリー",amount:"含有"},{name:"トマト",amount:"含有"},{name:"じゃがいも",amount:"含有"}],description:"強力な抗酸化物質で水溶性・脂溶性両方の環境で働く。ビタミンC・Eなど他の抗酸化物質を再生。糖質代謝を促進。"},
+
+  // === MINERALS: Major (主要ミネラル) ===
+  {id:"ca",name:"カルシウム",nameEn:"Calcium",category:"mineral",subCategory:"主要ミネラル",unit:"mg",rda:"650〜800",deficiency:"骨粗鬆症、くる病、テタニー（筋痙攣）、歯の脆弱化",excess:"便秘、腎結石、鉄・亜鉛の吸収阻害",foods:[{name:"干しエビ",amount:"7,100mg/100g"},{name:"煮干し",amount:"2,200mg/100g"},{name:"パルメザンチーズ",amount:"1,300mg/100g"},{name:"小松菜",amount:"170mg/100g"},{name:"牛乳",amount:"110mg/100g"}],description:"体内で最も多いミネラル。骨・歯の主成分。筋収縮、神経伝達、血液凝固にも関与。ビタミンDが吸収を促進。"},
+  {id:"p",name:"リン",nameEn:"Phosphorus",category:"mineral",subCategory:"主要ミネラル",unit:"mg",rda:"800〜1,000",deficiency:"骨軟化症、筋力低下、食欲不振（欠乏は稀）",excess:"カルシウムの吸収阻害、骨代謝異常、腎障害",foods:[{name:"しらす干し",amount:"860mg/100g"},{name:"プロセスチーズ",amount:"730mg/100g"},{name:"大豆",amount:"580mg/100g"},{name:"卵黄",amount:"570mg/100g"},{name:"煮干し",amount:"1,500mg/100g"}],description:"カルシウムに次いで体内に多いミネラル。骨・歯の構成成分。ATP・DNA・RNAの構成要素。エネルギー代謝に必須。"},
+  {id:"mg",name:"マグネシウム",nameEn:"Magnesium",category:"mineral",subCategory:"主要ミネラル",unit:"mg",rda:"270〜370",deficiency:"筋痙攣、不整脈、骨粗鬆症、高血圧、精神不安",excess:"下痢（サプリメント過剰時）",foods:[{name:"あおさ",amount:"3,200mg/100g"},{name:"干しひじき",amount:"640mg/100g"},{name:"アーモンド",amount:"310mg/100g"},{name:"大豆",amount:"220mg/100g"},{name:"ほうれん草",amount:"69mg/100g"}],description:"300以上の酵素反応に関与。筋肉・神経機能の維持、骨の形成、エネルギー産生に重要。ビタミンDの活性化にも必要。"},
+  {id:"na",name:"ナトリウム",nameEn:"Sodium",category:"mineral",subCategory:"主要ミネラル",unit:"mg",rda:"600（食塩相当7.5g未満目標）",deficiency:"低ナトリウム血症、筋痙攣、めまい、意識障害",excess:"高血圧、胃がんリスク、腎臓負担、むくみ",foods:[{name:"食塩",amount:"39,000mg/100g"},{name:"醤油",amount:"5,700mg/100g"},{name:"味噌",amount:"4,900mg/100g"},{name:"梅干し",amount:"8,700mg/100g"},{name:"たくあん",amount:"1,700mg/100g"}],description:"体液の浸透圧調節、酸塩基平衡の維持に必須。神経刺激の伝達、筋収縮にも関与。カリウムと拮抗的に作用。"},
+  {id:"k",name:"カリウム",nameEn:"Potassium",category:"mineral",subCategory:"主要ミネラル",unit:"mg",rda:"2,500〜3,000",deficiency:"筋力低下、不整脈、便秘、倦怠感",excess:"高カリウム血症（腎機能低下時）、不整脈",foods:[{name:"干し昆布",amount:"5,300mg/100g"},{name:"干しひじき",amount:"4,400mg/100g"},{name:"大豆",amount:"1,900mg/100g"},{name:"バナナ",amount:"360mg/100g"},{name:"ほうれん草",amount:"690mg/100g"}],description:"細胞内液の主要な陽イオン。ナトリウムの排泄を促進し血圧を下げる。筋収縮、神経伝達に重要。"},
+  {id:"cl",name:"塩素",nameEn:"Chlorine",category:"mineral",subCategory:"主要ミネラル",unit:"mg",rda:"食塩として摂取",deficiency:"代謝性アルカローシス、食欲不振",excess:"高血圧（ナトリウムと共に）",foods:[{name:"食塩",amount:"59,900mg/100g"},{name:"醤油",amount:"含有"},{name:"味噌",amount:"含有"},{name:"海藻類",amount:"含有"},{name:"オリーブ",amount:"含有"}],description:"胃液（塩酸）の構成成分として消化に関与。体液の浸透圧調節、酸塩基平衡の維持。食塩（NaCl）として摂取。"},
+  {id:"s",name:"硫黄",nameEn:"Sulfur",category:"mineral",subCategory:"主要ミネラル",unit:"mg",rda:"タンパク質から摂取",deficiency:"皮膚・爪・毛髪の異常、関節障害",excess:"過剰症の報告は稀",foods:[{name:"卵",amount:"高含有"},{name:"にんにく",amount:"高含有"},{name:"玉ねぎ",amount:"含有"},{name:"ブロッコリー",amount:"含有"},{name:"肉類全般",amount:"含有"}],description:"メチオニン・システインなど含硫アミノ酸の構成元素。ケラチン（毛髪・爪）の材料。解毒作用にも関与。"},
+
+  // === MINERALS: Trace (微量ミネラル) ===
+  {id:"fe",name:"鉄",nameEn:"Iron",category:"mineral",subCategory:"微量ミネラル",unit:"mg",rda:"6.5〜10.5",deficiency:"鉄欠乏性貧血、疲労感、動悸、息切れ、集中力低下",excess:"ヘモクロマトーシス、肝障害、酸化ストレス",foods:[{name:"豚レバー",amount:"13mg/100g"},{name:"あさり",amount:"3.8mg/100g"},{name:"小松菜",amount:"2.8mg/100g"},{name:"ほうれん草",amount:"2.0mg/100g"},{name:"納豆",amount:"3.3mg/100g"}],description:"ヘモグロビン・ミオグロビンの構成成分で酸素運搬に必須。ヘム鉄（動物性）は非ヘム鉄（植物性）より吸収率が高い。"},
+  {id:"zn",name:"亜鉛",nameEn:"Zinc",category:"mineral",subCategory:"微量ミネラル",unit:"mg",rda:"8〜11",deficiency:"味覚障害、成長障害、免疫力低下、皮膚炎、脱毛",excess:"銅欠乏、貧血、胃腸障害",foods:[{name:"牡蠣",amount:"14mg/100g"},{name:"豚レバー",amount:"6.9mg/100g"},{name:"牛もも肉",amount:"4.4mg/100g"},{name:"カシューナッツ",amount:"5.4mg/100g"},{name:"高野豆腐",amount:"5.2mg/100g"}],description:"300以上の酵素の活性に必要。DNA合成、免疫機能、味覚維持、創傷治癒に関与。ビタミンAの代謝にも必要。"},
+  {id:"cu",name:"銅",nameEn:"Copper",category:"mineral",subCategory:"微量ミネラル",unit:"mg",rda:"0.7〜1.0",deficiency:"貧血（鉄利用障害）、白血球減少、骨異常、毛髪色素脱失",excess:"肝障害、溶血性貧血（ウィルソン病）",foods:[{name:"牛レバー",amount:"5.3mg/100g"},{name:"しゃこ",amount:"3.5mg/100g"},{name:"カシューナッツ",amount:"1.9mg/100g"},{name:"大豆",amount:"1.1mg/100g"},{name:"ココア",amount:"3.8mg/100g"}],description:"鉄の代謝（セルロプラスミン）に不可欠。メラニン色素生成、コラーゲン架橋形成、抗酸化酵素SODの構成成分。"},
+  {id:"mn",name:"マンガン",nameEn:"Manganese",category:"mineral",subCategory:"微量ミネラル",unit:"mg",rda:"3.5〜4.0",deficiency:"骨代謝異常、成長障害、糖脂質代謝異常",excess:"中枢神経障害（職業性暴露）",foods:[{name:"玄米",amount:"2.1mg/100g"},{name:"栗",amount:"3.3mg/100g"},{name:"大豆",amount:"2.3mg/100g"},{name:"生姜",amount:"5.0mg/100g"},{name:"れんこん",amount:"0.78mg/100g"}],description:"骨形成、糖脂質代謝、抗酸化酵素MnSODの構成成分。ピルビン酸カルボキシラーゼの補因子としてエネルギー代謝にも関与。"},
+  {id:"iodine",name:"ヨウ素",nameEn:"Iodine",category:"mineral",subCategory:"微量ミネラル",unit:"μg",rda:"130",deficiency:"甲状腺腫、クレチン症（先天性）、甲状腺機能低下",excess:"甲状腺機能障害（過剰でも機能低下を起こしうる）",foods:[{name:"昆布",amount:"240,000μg/100g"},{name:"わかめ",amount:"8,500μg/100g"},{name:"ひじき",amount:"45,000μg/100g"},{name:"たら",amount:"350μg/100g"},{name:"牡蠣",amount:"73μg/100g"}],description:"甲状腺ホルモン（T3・T4）の構成元素。基礎代謝の調節、成長・発達に必須。日本人は海藻摂取により充足しやすい。"},
+  {id:"se",name:"セレン",nameEn:"Selenium",category:"mineral",subCategory:"微量ミネラル",unit:"μg",rda:"25〜30",deficiency:"心筋症（克山病）、免疫力低下、甲状腺機能低下",excess:"脱毛、爪の変形、下痢、神経障害",foods:[{name:"かつお",amount:"100μg/100g"},{name:"まぐろ",amount:"82μg/100g"},{name:"卵",amount:"32μg/100g"},{name:"たらこ",amount:"130μg/100g"},{name:"ブラジルナッツ",amount:"1,917μg/100g"}],description:"抗酸化酵素グルタチオンペルオキシダーゼの構成成分。ビタミンEと相乗的に抗酸化作用を発揮。甲状腺ホルモン代謝にも必要。"},
+  {id:"mo",name:"モリブデン",nameEn:"Molybdenum",category:"mineral",subCategory:"微量ミネラル",unit:"μg",rda:"25〜30",deficiency:"頻脈、頭痛、夜盲症（欠乏は極めて稀）",excess:"銅の排泄促進、痛風様症状",foods:[{name:"大豆",amount:"350μg/100g"},{name:"枝豆",amount:"240μg/100g"},{name:"そば",amount:"130μg/100g"},{name:"レバー",amount:"120μg/100g"},{name:"落花生",amount:"95μg/100g"}],description:"キサンチンオキシダーゼ等の補因子。尿酸の代謝、硫黄含有アミノ酸の代謝に関与。通常の食事で十分摂取可能。"},
+  {id:"cr",name:"クロム",nameEn:"Chromium",category:"mineral",subCategory:"微量ミネラル",unit:"μg",rda:"10",deficiency:"耐糖能異常、糖尿病リスク上昇、脂質代謝異常",excess:"腎障害、肝障害（六価クロムの場合）",foods:[{name:"ひじき",amount:"24μg/100g"},{name:"青海苔",amount:"39μg/100g"},{name:"ビール酵母",amount:"高含有"},{name:"ブロッコリー",amount:"含有"},{name:"全粒穀物",amount:"含有"}],description:"インスリンの作用を増強し糖代謝を改善（耐糖因子GTFの構成成分）。脂質代謝にも関与。三価クロムは必須、六価クロムは有毒。"},
+  {id:"co",name:"コバルト",nameEn:"Cobalt",category:"mineral",subCategory:"微量ミネラル",unit:"μg",rda:"ビタミンB12として摂取",deficiency:"ビタミンB12欠乏（悪性貧血）",excess:"甲状腺腫、心筋症（過剰暴露時）",foods:[{name:"しじみ",amount:"含有"},{name:"牛レバー",amount:"含有"},{name:"あさり",amount:"含有"},{name:"牡蠣",amount:"含有"},{name:"海苔",amount:"含有"}],description:"ビタミンB12の中心金属元素。赤血球の形成に間接的に必須。コバルト単体としての食事摂取基準はなく、B12として摂取。"},
+  {id:"f",name:"フッ素",nameEn:"Fluorine",category:"mineral",subCategory:"微量ミネラル",unit:"mg",rda:"明確な基準なし",deficiency:"虫歯リスク増加、骨密度低下",excess:"フッ素症（歯のまだら模様）、骨硬化症",foods:[{name:"緑茶",amount:"含有"},{name:"海産物",amount:"含有"},{name:"いわし",amount:"含有"},{name:"水道水（地域差）",amount:"微量"},{name:"紅茶",amount:"含有"}],description:"歯のエナメル質を強化し虫歯予防効果。骨の石灰化を促進。歯磨き粉や水道水への添加で知られる。"},
+  {id:"si",name:"ケイ素",nameEn:"Silicon",category:"mineral",subCategory:"微量ミネラル",unit:"mg",rda:"明確な基準なし",deficiency:"骨・結合組織の脆弱化、皮膚弾力低下",excess:"腎結石リスク（大量摂取時）",foods:[{name:"玄米",amount:"含有"},{name:"大麦",amount:"含有"},{name:"じゃがいも",amount:"含有"},{name:"バナナ",amount:"含有"},{name:"ミネラルウォーター",amount:"含有"}],description:"コラーゲン・エラスチンの架橋形成に関与し結合組織を強化。骨の石灰化を促進。皮膚・毛髪・爪の健康維持にも寄与。"},
+  {id:"b",name:"ホウ素",nameEn:"Boron",category:"mineral",subCategory:"微量ミネラル",unit:"mg",rda:"明確な基準なし",deficiency:"カルシウム・マグネシウム代謝異常、骨密度低下",excess:"下痢、嘔吐、皮膚炎（大量摂取時）",foods:[{name:"りんご",amount:"含有"},{name:"ぶどう",amount:"含有"},{name:"ナッツ類",amount:"含有"},{name:"豆類",amount:"含有"},{name:"はちみつ",amount:"含有"}],description:"カルシウム・マグネシウム・ビタミンDの代謝に関与。骨の健康維持に寄与。エストロゲンの代謝にも影響。"},
+  {id:"v",name:"バナジウム",nameEn:"Vanadium",category:"mineral",subCategory:"微量ミネラル",unit:"μg",rda:"明確な基準なし",deficiency:"成長障害、生殖機能異常（動物実験）",excess:"胃腸障害、腎毒性（大量摂取時）",foods:[{name:"貝類",amount:"含有"},{name:"マッシュルーム",amount:"含有"},{name:"パセリ",amount:"含有"},{name:"黒胡椒",amount:"含有"},{name:"全粒穀物",amount:"含有"}],description:"インスリン様作用があり血糖値の調節に関与する可能性。脂質代謝にも影響。必須性はまだ確定していない。"},
+
+  // === AMINO ACIDS: Essential (必須アミノ酸) ===
+  {id:"ile",name:"イソロイシン",nameEn:"Isoleucine",category:"aminoAcid",subCategory:"必須アミノ酸",unit:"mg",rda:"体重1kgあたり20mg",deficiency:"成長障害、筋力低下、血糖調節異常",excess:"過剰症は稀（腎臓に負担）",foods:[{name:"鶏むね肉",amount:"1,100mg/100g"},{name:"まぐろ赤身",amount:"1,200mg/100g"},{name:"卵",amount:"670mg/100g"},{name:"大豆",amount:"1,800mg/100g"},{name:"牛乳",amount:"170mg/100g"}],description:"BCAA（分岐鎖アミノ酸）の一つ。筋肉のエネルギー源、筋タンパク質合成の促進。血糖値の調節にも関与。"},
+  {id:"leu",name:"ロイシン",nameEn:"Leucine",category:"aminoAcid",subCategory:"必須アミノ酸",unit:"mg",rda:"体重1kgあたり39mg",deficiency:"成長障害、筋力低下、タンパク質代謝異常",excess:"過剰症は稀",foods:[{name:"鶏むね肉",amount:"1,900mg/100g"},{name:"まぐろ赤身",amount:"2,000mg/100g"},{name:"大豆",amount:"2,900mg/100g"},{name:"卵",amount:"1,100mg/100g"},{name:"チーズ",amount:"2,400mg/100g"}],description:"BCAAの中で最も筋タンパク質合成を刺激する。mTOR経路を活性化。筋肉の分解抑制、エネルギー供給にも重要。"},
+  {id:"lys",name:"リシン",nameEn:"Lysine",category:"aminoAcid",subCategory:"必須アミノ酸",unit:"mg",rda:"体重1kgあたり30mg",deficiency:"成長障害、免疫力低下、貧血、コラーゲン合成低下",excess:"胃痙攣、下痢（サプリ過剰時）",foods:[{name:"かつお",amount:"2,100mg/100g"},{name:"鶏むね肉",amount:"2,000mg/100g"},{name:"大豆",amount:"2,400mg/100g"},{name:"チーズ",amount:"2,300mg/100g"},{name:"卵",amount:"900mg/100g"}],description:"コラーゲン合成、カルシウム吸収促進に関与。米・小麦に少なく、日本食の制限アミノ酸。ヘルペス抑制効果も報告。"},
+  {id:"met",name:"メチオニン",nameEn:"Methionine",category:"aminoAcid",subCategory:"必須アミノ酸",unit:"mg",rda:"体重1kgあたり10mg（+システイン）",deficiency:"成長障害、脂肪肝、皮膚炎、アレルギー様症状",excess:"ホモシステイン増加（動脈硬化リスク）",foods:[{name:"かつお",amount:"760mg/100g"},{name:"鶏むね肉",amount:"640mg/100g"},{name:"卵",amount:"400mg/100g"},{name:"大豆",amount:"530mg/100g"},{name:"牛乳",amount:"83mg/100g"}],description:"含硫アミノ酸。S-アデノシルメチオニン（SAMe）としてメチル基供与体に。肝臓の解毒作用、抗酸化物質グルタチオンの前駆体。"},
+  {id:"phe",name:"フェニルアラニン",nameEn:"Phenylalanine",category:"aminoAcid",subCategory:"必須アミノ酸",unit:"mg",rda:"体重1kgあたり25mg（+チロシン）",deficiency:"成長障害、精神的無気力、皮膚色素脱失",excess:"血圧上昇、頭痛（PKU患者は厳格制限）",foods:[{name:"大豆",amount:"2,000mg/100g"},{name:"鶏むね肉",amount:"1,000mg/100g"},{name:"まぐろ赤身",amount:"960mg/100g"},{name:"チーズ",amount:"1,500mg/100g"},{name:"卵",amount:"680mg/100g"}],description:"チロシンに変換され、ドーパミン・ノルアドレナリン・アドレナリンの前駆体に。メラニン色素の合成にも必要。PKU患者は摂取制限が必要。"},
+  {id:"thr",name:"トレオニン",nameEn:"Threonine",category:"aminoAcid",subCategory:"必須アミノ酸",unit:"mg",rda:"体重1kgあたり15mg",deficiency:"成長障害、脂肪肝、食欲不振",excess:"過剰症の報告は稀",foods:[{name:"鶏むね肉",amount:"1,000mg/100g"},{name:"まぐろ赤身",amount:"1,100mg/100g"},{name:"大豆",amount:"1,600mg/100g"},{name:"卵",amount:"610mg/100g"},{name:"牛乳",amount:"150mg/100g"}],description:"コラーゲンの構成アミノ酸。小腸粘膜のムチン合成に重要。脂肪の蓄積を防ぎ肝機能を保護。米に少ない制限アミノ酸。"},
+  {id:"trp",name:"トリプトファン",nameEn:"Tryptophan",category:"aminoAcid",subCategory:"必須アミノ酸",unit:"mg",rda:"体重1kgあたり4mg",deficiency:"不眠、うつ症状、ペラグラ（ナイアシン不足時）",excess:"眠気、嘔吐（大量サプリ時）",foods:[{name:"かつお",amount:"310mg/100g"},{name:"チーズ",amount:"320mg/100g"},{name:"大豆",amount:"520mg/100g"},{name:"バナナ",amount:"11mg/100g"},{name:"牛乳",amount:"42mg/100g"}],description:"セロトニン→メラトニンの前駆体で睡眠・精神安定に関与。ナイアシン（ビタミンB3）にも体内変換される。必須アミノ酸の中で最も必要量が少ない。"},
+  {id:"val",name:"バリン",nameEn:"Valine",category:"aminoAcid",subCategory:"必須アミノ酸",unit:"mg",rda:"体重1kgあたり26mg",deficiency:"成長障害、筋力低下、食欲不振",excess:"過剰症は稀",foods:[{name:"鶏むね肉",amount:"1,200mg/100g"},{name:"まぐろ赤身",amount:"1,300mg/100g"},{name:"大豆",amount:"2,000mg/100g"},{name:"卵",amount:"830mg/100g"},{name:"チーズ",amount:"1,700mg/100g"}],description:"BCAAの一つ。筋肉のエネルギー源として利用。筋タンパク質の合成促進と分解抑制。成長促進・血液中の窒素バランスの調整。"}
+];
+
+// ============================================================
+// EDGES: Nutrient Relationships
+// ============================================================
+const edges = [
+  // Synergy (相乗)
+  {source:"vitC",target:"vitE",type:"synergy",description:"ビタミンCが酸化されたビタミンEを再生し抗酸化力を維持"},
+  {source:"vitE",target:"se",type:"synergy",description:"ビタミンEとセレンが相乗的に抗酸化作用を発揮"},
+  {source:"vitB12",target:"vitB9",type:"synergy",description:"B12と葉酸が協働して赤血球を形成（造血ビタミン）"},
+  {source:"vitB2",target:"vitB6",type:"synergy",description:"B2がB6の活性型への変換に必要"},
+  {source:"vitB5",target:"vitC",type:"synergy",description:"副腎皮質ホルモン合成でパントテン酸とビタミンCが協働"},
+  {source:"co",target:"vitB12",type:"synergy",description:"コバルトはビタミンB12の中心金属元素として不可欠"},
+  {source:"vitA",target:"zn",type:"synergy",description:"亜鉛がビタミンA結合タンパク質の合成に必要"},
+  {source:"vitK",target:"ca",type:"synergy",description:"ビタミンKがオステオカルシンを活性化しカルシウムの骨定着を促進"},
+  {source:"vitB1",target:"mg",type:"synergy",description:"マグネシウムがチアミンの活性化（リン酸化）に必要"},
+  {source:"iodine",target:"se",type:"synergy",description:"セレンが甲状腺ホルモンの代謝（脱ヨード酵素）に必要"},
+  {source:"mn",target:"ca",type:"synergy",description:"マンガンとカルシウムが骨形成で協働"},
+  {source:"leu",target:"ile",type:"synergy",description:"BCAA（ロイシン・イソロイシン・バリン）が協働して筋タンパク合成を促進"},
+  {source:"leu",target:"val",type:"synergy",description:"BCAAとして筋肉のエネルギー供給と分解抑制に協働"},
+  {source:"ile",target:"val",type:"synergy",description:"BCAA3種がバランスよく存在することで効果を発揮"},
+  {source:"lys",target:"vitC",type:"synergy",description:"リシンとビタミンCがコラーゲン合成で協働"},
+  {source:"met",target:"vitB12",type:"synergy",description:"B12がメチオニン合成酵素の補酵素として機能"},
+  {source:"met",target:"vitB9",type:"synergy",description:"葉酸がメチオニン再生（ホモシステイン→メチオニン）に必要"},
+  {source:"rutin",target:"vitC",type:"synergy",description:"ルチンがビタミンCの吸収と効果を増強"},
+  {source:"lipoicAcid",target:"vitC",type:"synergy",description:"α-リポ酸がビタミンCを再生し抗酸化ネットワークを維持"},
+  {source:"lipoicAcid",target:"vitE",type:"synergy",description:"α-リポ酸がビタミンEを再生"},
+  {source:"choline",target:"vitB9",type:"synergy",description:"コリンと葉酸がメチル基代謝（一炭素代謝）で協働"},
+  {source:"p",target:"ca",type:"synergy",description:"リンとカルシウムが適正比率で骨の石灰化を促進"},
+
+  // Absorption (吸収促進)
+  {source:"vitC",target:"fe",type:"absorption",description:"ビタミンCが非ヘム鉄を還元し吸収を3〜6倍促進"},
+  {source:"vitD",target:"ca",type:"absorption",description:"ビタミンDがカルシウムの腸管吸収を促進（カルビンディン誘導）"},
+  {source:"vitD",target:"p",type:"absorption",description:"ビタミンDがリンの腸管吸収を促進"},
+  {source:"vitB6",target:"mg",type:"absorption",description:"ビタミンB6がマグネシウムの細胞内取り込みを促進"},
+  {source:"vitA",target:"fe",type:"absorption",description:"ビタミンAが鉄の利用効率を高め貧血を予防"},
+  {source:"vitD",target:"mg",type:"absorption",description:"ビタミンDがマグネシウムの吸収を調節"},
+  {source:"cu",target:"fe",type:"absorption",description:"銅（セルロプラスミン）が鉄の酸化を助け利用を促進"},
+  {source:"vitC",target:"cr",type:"absorption",description:"ビタミンCがクロムの吸収を促進"},
+  {source:"lys",target:"ca",type:"absorption",description:"リシンがカルシウムの腸管吸収を促進"},
+  {source:"trp",target:"vitB3",type:"absorption",description:"トリプトファンが体内でナイアシン（B3）に変換される（60mg→1mg）"},
+  {source:"b",target:"vitD",type:"absorption",description:"ホウ素がビタミンDの活性型への変換を促進"},
+
+  // Antagonist (拮抗)
+  {source:"ca",target:"fe",type:"antagonist",description:"カルシウムが鉄の吸収を阻害（同時摂取で吸収率低下）"},
+  {source:"ca",target:"zn",type:"antagonist",description:"カルシウム過剰摂取が亜鉛の吸収を阻害"},
+  {source:"zn",target:"cu",type:"antagonist",description:"亜鉛過剰摂取が銅の吸収を競合的に阻害"},
+  {source:"fe",target:"zn",type:"antagonist",description:"鉄と亜鉛が高用量で腸管吸収を相互に阻害"},
+  {source:"na",target:"k",type:"antagonist",description:"ナトリウムとカリウムが拮抗的に体液バランスを調節"},
+  {source:"ca",target:"mg",type:"antagonist",description:"カルシウム過剰がマグネシウムの吸収を阻害"},
+  {source:"mo",target:"cu",type:"antagonist",description:"モリブデン過剰が銅の排泄を促進し欠乏を誘発"},
+  {source:"phe",target:"trp",type:"antagonist",description:"フェニルアラニンとトリプトファンが脳内輸送で競合"}
+];
+
+// ============================================================
+// COLOR SCHEME
+// ============================================================
+const COLORS = {
+  '脂溶性':     {bg:'#e67e22',text:'#fff',light:'#fdebd0'},
+  '水溶性':     {bg:'#3498db',text:'#fff',light:'#d6eaf8'},
+  '主要ミネラル':{bg:'#27ae60',text:'#fff',light:'#d5f5e3'},
+  '微量ミネラル':{bg:'#16a085',text:'#fff',light:'#d1f2eb'},
+  '必須アミノ酸':{bg:'#8e44ad',text:'#fff',light:'#e8daef'}
+};
+const EDGE_COLORS = {synergy:'#4caf50',absorption:'#2196f3',antagonist:'#f44336'};
+const EDGE_LABELS = {synergy:'相乗',absorption:'吸収促進',antagonist:'拮抗'};
+
+// ============================================================
+// BUILD CYTOSCAPE ELEMENTS
+// ============================================================
+const cyElements = [];
+nutrients.forEach(n => {
+  cyElements.push({data:{id:n.id,label:n.name,category:n.category,subCategory:n.subCategory,color:COLORS[n.subCategory].bg}});
+});
+edges.forEach((e,i) => {
+  cyElements.push({data:{id:'e'+i,source:e.source,target:e.target,edgeType:e.type,color:EDGE_COLORS[e.type]}});
+});
+
+// ============================================================
+// CYTOSCAPE INIT
+// ============================================================
+const cy = cytoscape({
+  container: document.getElementById('cy'),
+  elements: cyElements,
+  style: [
+    {selector:'node',style:{
+      'background-color':'data(color)',
+      'label':'data(label)',
+      'font-size':'11px',
+      'font-family':'-apple-system,BlinkMacSystemFont,Hiragino Kaku Gothic ProN,sans-serif',
+      'color':'#333',
+      'text-valign':'bottom',
+      'text-margin-y':4,
+      'width':32,'height':32,
+      'border-width':2,'border-color':'#fff',
+      'text-outline-width':2,'text-outline-color':'#fff',
+      'transition-property':'opacity,width,height,border-color',
+      'transition-duration':'0.2s'
+    }},
+    {selector:'node:selected',style:{
+      'border-color':'#2c3e50','border-width':3,'width':40,'height':40
+    }},
+    {selector:'node.highlighted',style:{
+      'border-color':'#f39c12','border-width':3,'width':40,'height':40
+    }},
+    {selector:'node.dimmed',style:{
+      'opacity':0.15
+    }},
+    {selector:'node.searchMatch',style:{
+      'border-color':'#e74c3c','border-width':3,'width':42,'height':42
+    }},
+    {selector:'node.hidden',style:{
+      'display':'none'
+    }},
+    {selector:'edge',style:{
+      'line-color':'data(color)',
+      'target-arrow-color':'data(color)',
+      'width':2,
+      'curve-style':'bezier',
+      'opacity':0.5,
+      'transition-property':'opacity,width',
+      'transition-duration':'0.2s'
+    }},
+    {selector:'edge[edgeType="absorption"]',style:{
+      'line-style':'dashed','line-dash-pattern':[6,3],
+      'target-arrow-shape':'triangle','arrow-scale':0.8
+    }},
+    {selector:'edge[edgeType="antagonist"]',style:{
+      'line-style':'dotted','line-dash-pattern':[2,4]
+    }},
+    {selector:'edge[edgeType="synergy"]',style:{
+      'line-style':'solid'
+    }},
+    {selector:'edge.highlighted',style:{
+      'opacity':1,'width':3
+    }},
+    {selector:'edge.dimmed',style:{
+      'opacity':0.05
+    }},
+    {selector:'edge.hidden',style:{
+      'display':'none'
+    }}
+  ],
+  wheelSensitivity: 0.3,
+  minZoom: 0.3,
+  maxZoom: 3
+});
+
+// Size nodes by degree (connection count)
+function sizeByDegree(){
+  cy.nodes().forEach(n => {
+    const deg = n.degree();
+    const sz = Math.max(28, Math.min(56, 24 + deg * 4));
+    n.style('width', sz);
+    n.style('height', sz);
+  });
+}
+
+// ============================================================
+// LAYOUTS
+// ============================================================
+function applyLayout(name){
+  let opts;
+  switch(name){
+    case 'cluster':
+      opts = {
+        name:'cose',
+        nodeRepulsion:8000,
+        idealEdgeLength:120,
+        edgeElasticity:100,
+        gravity:0.3,
+        numIter:500,
+        animate:true,
+        animationDuration:600,
+        randomize:false
+      };
+      // Group by category
+      const groups = {vitamin:{x:0,y:0},mineral:{x:400,y:0},aminoAcid:{x:200,y:350}};
+      cy.nodes().forEach(n=>{
+        const g = groups[n.data('category')] || {x:200,y:200};
+        n.position({x:g.x + (Math.random()-0.5)*200, y:g.y + (Math.random()-0.5)*200});
+      });
+      opts.randomize = false;
+      break;
+    case 'concentric':
+      opts = {
+        name:'concentric',
+        concentric:n=>n.degree(),
+        levelWidth:()=>2,
+        minNodeSpacing:40,
+        animate:true,
+        animationDuration:600
+      };
+      break;
+    case 'subcategory':
+      opts = {name:'preset',animate:true,animationDuration:600};
+      const subGroups = {'脂溶性':{x:0,y:0},'水溶性':{x:300,y:0},'主要ミネラル':{x:600,y:0},'微量ミネラル':{x:150,y:350},'必須アミノ酸':{x:450,y:350}};
+      cy.nodes().forEach(n=>{
+        const sg = subGroups[n.data('subCategory')] || {x:300,y:175};
+        const sameGroup = cy.nodes().filter(m=>m.data('subCategory')===n.data('subCategory'));
+        const idx = sameGroup.indexOf(n);
+        const cols = Math.ceil(Math.sqrt(sameGroup.length));
+        const row = Math.floor(idx/cols);
+        const col = idx % cols;
+        n.position({x:sg.x + col*60, y:sg.y + row*60});
+      });
+      break;
+    case 'force':
+    default:
+      opts = {
+        name:'cose',
+        nodeRepulsion:6000,
+        idealEdgeLength:100,
+        edgeElasticity:80,
+        gravity:0.25,
+        numIter:800,
+        animate:true,
+        animationDuration:600,
+        randomize:true
+      };
+      break;
+  }
+  cy.layout(opts).run();
+  setTimeout(sizeByDegree, 700);
+}
+
+// Initial layout
+applyLayout('cluster');
+sizeByDegree();
+
+document.getElementById('layoutSelect').addEventListener('change', e => applyLayout(e.target.value));
+document.getElementById('fitBtn').addEventListener('click', ()=> cy.fit(null,30));
+
+// ============================================================
+// TOOLTIP
+// ============================================================
+const tooltip = document.getElementById('tooltip');
+cy.on('mouseover','node', e=>{
+  const n = e.target;
+  const d = nutrients.find(x=>x.id===n.id());
+  if(!d) return;
+  tooltip.innerHTML = `<strong>${d.name}</strong><br><span style="font-size:10px">${d.subCategory} | ${d.nameEn}</span>`;
+  tooltip.style.display = 'block';
+});
+cy.on('mouseout','node', ()=>{tooltip.style.display='none'});
+cy.on('mousemove', e=>{
+  tooltip.style.left = (e.originalEvent.clientX+12)+'px';
+  tooltip.style.top = (e.originalEvent.clientY+12)+'px';
+});
+
+// ============================================================
+// NODE CLICK → DETAIL PANEL
+// ============================================================
+const detailPanel = document.getElementById('detailPanel');
+const detailContent = detailPanel.querySelector('.detail-content');
+const placeholder = detailPanel.querySelector('.placeholder');
+
+function showDetail(nodeId){
+  const d = nutrients.find(x=>x.id===nodeId);
+  if(!d) return;
+  const c = COLORS[d.subCategory];
+  // Find connected edges
+  const node = cy.getElementById(nodeId);
+  const connEdges = node.connectedEdges();
+  const relations = [];
+  connEdges.forEach(edge=>{
+    const ed = edges.find((_,i)=>'e'+i===edge.id());
+    if(!ed) return;
+    const otherId = ed.source===nodeId?ed.target:ed.source;
+    const other = nutrients.find(x=>x.id===otherId);
+    if(other) relations.push({...ed, otherName:other.name, otherId});
+  });
+
+  let foodsHtml = d.foods.map(f=>`<div class="food-item"><span class="food-name">${f.name}</span><span class="food-amount">${f.amount}</span></div>`).join('');
+  let defTags = d.deficiency.split('、').map(s=>`<span class="tag deficiency">${s}</span>`).join('');
+  let exTags = d.excess.split('、').map(s=>`<span class="tag excess">${s}</span>`).join('');
+  let relHtml = relations.map(r=>`<div class="relation-item" data-node="${r.otherId}"><span class="relation-type ${r.type}">${EDGE_LABELS[r.type]}</span><span>${r.otherName}</span></div>`).join('') || '<div class="info-row" style="color:#bbb">接続なし</div>';
+
+  detailContent.innerHTML = `
+    <div class="detail-header">
+      <span class="cat-badge" style="background:${c.bg}">${d.subCategory}</span>
+      <h2>${d.name}</h2>
+      <div class="name-en">${d.nameEn}</div>
+      <div class="desc">${d.description}</div>
+    </div>
+    <div class="detail-section">
+      <h4>基本情報</h4>
+      <div class="info-row">単位: ${d.unit}</div>
+      <div class="info-row">推奨量(成人): ${d.rda}</div>
+    </div>
+    <div class="detail-section">
+      <h4>欠乏症</h4>
+      <div>${defTags}</div>
+    </div>
+    <div class="detail-section">
+      <h4>過剰症</h4>
+      <div>${exTags}</div>
+    </div>
+    <div class="detail-section">
+      <h4>含有食材 (上位)</h4>
+      ${foodsHtml}
+    </div>
+    <div class="detail-section">
+      <h4>関連栄養素 (${relations.length})</h4>
+      ${relHtml}
+    </div>
+  `;
+  placeholder.style.display = 'none';
+  detailContent.style.display = 'block';
+  detailPanel.classList.remove('empty');
+  detailPanel.classList.add('open');
+
+  // Click on relation item to navigate
+  detailContent.querySelectorAll('.relation-item').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const nid = el.dataset.node;
+      cy.nodes().unselect();
+      const target = cy.getElementById(nid);
+      target.select();
+      cy.animate({center:{eles:target},zoom:1.5,duration:400});
+      highlightNode(nid);
+      showDetail(nid);
+    });
+  });
+}
+
+function highlightNode(nodeId){
+  cy.elements().removeClass('highlighted dimmed');
+  const node = cy.getElementById(nodeId);
+  const neighborhood = node.closedNeighborhood();
+  cy.elements().not(neighborhood).addClass('dimmed');
+  neighborhood.addClass('highlighted');
+  node.removeClass('dimmed');
+}
+
+cy.on('tap','node', e=>{
+  const nodeId = e.target.id();
+  highlightNode(nodeId);
+  showDetail(nodeId);
+});
+
+cy.on('tap', e=>{
+  if(e.target === cy){
+    cy.elements().removeClass('highlighted dimmed searchMatch');
+    placeholder.style.display = 'block';
+    detailContent.style.display = 'none';
+    detailPanel.classList.add('empty');
+    detailPanel.classList.remove('open');
+  }
+});
+
+// ============================================================
+// SEARCH
+// ============================================================
+const searchInput = document.getElementById('searchInput');
+searchInput.addEventListener('input', ()=>{
+  const q = searchInput.value.trim().toLowerCase();
+  cy.nodes().removeClass('searchMatch dimmed');
+  if(!q){return;}
+  const matches = cy.nodes().filter(n=>{
+    const d = nutrients.find(x=>x.id===n.id());
+    if(!d) return false;
+    return d.name.toLowerCase().includes(q) || d.nameEn.toLowerCase().includes(q) || d.id.toLowerCase().includes(q);
+  });
+  if(matches.length > 0){
+    cy.nodes().not(matches).addClass('dimmed');
+    matches.addClass('searchMatch');
+    if(matches.length === 1){
+      cy.animate({center:{eles:matches},zoom:1.5,duration:400});
+      showDetail(matches[0].id());
+      highlightNode(matches[0].id());
+    }
+  }
+});
+
+// ============================================================
+// FILTERS (Category / SubCategory / Edge)
+// ============================================================
+function applyFilters(){
+  const catChecked = [...document.querySelectorAll('#catFilters input:checked')].map(i=>i.dataset.cat);
+  const subChecked = [...document.querySelectorAll('#subFilters input:checked')].map(i=>i.dataset.sub);
+  const edgeChecked = [...document.querySelectorAll('#edgeFilters input:checked')].map(i=>i.dataset.edge);
+
+  cy.nodes().forEach(n=>{
+    const d = nutrients.find(x=>x.id===n.id());
+    if(!d){n.addClass('hidden');return;}
+    const catOk = catChecked.includes(d.category);
+    const subOk = subChecked.includes(d.subCategory);
+    if(catOk && subOk) n.removeClass('hidden');
+    else n.addClass('hidden');
+  });
+
+  cy.edges().forEach(e=>{
+    const t = e.data('edgeType');
+    if(edgeChecked.includes(t)){
+      e.removeClass('hidden');
+    } else {
+      e.addClass('hidden');
+    }
+    // Also hide if source or target is hidden
+    if(e.source().hasClass('hidden') || e.target().hasClass('hidden')){
+      e.addClass('hidden');
+    }
+  });
+}
+
+document.querySelectorAll('#catFilters input, #subFilters input, #edgeFilters input').forEach(cb=>{
+  cb.addEventListener('change', applyFilters);
+});
+
+// ============================================================
+// REVERSE LOOKUP: Food → Nutrients
+// ============================================================
+const foodSearchBtn = document.getElementById('foodSearchBtn');
+const foodSearchInput = document.getElementById('foodSearchInput');
+const foodResults = document.getElementById('foodResults');
+
+foodSearchBtn.addEventListener('click', ()=>{
+  foodSearchInput.classList.toggle('show');
+  foodSearchBtn.classList.toggle('active');
+  if(!foodSearchInput.classList.contains('show')){
+    foodSearchInput.value='';foodResults.innerHTML='';
+  } else {
+    foodSearchInput.focus();
+  }
+});
+
+foodSearchInput.addEventListener('input', ()=>{
+  const q = foodSearchInput.value.trim().toLowerCase();
+  foodResults.innerHTML = '';
+  if(!q) return;
+  const matches = [];
+  nutrients.forEach(n=>{
+    n.foods.forEach(f=>{
+      if(f.name.toLowerCase().includes(q)){
+        matches.push({nutrient:n, food:f});
+      }
+    });
+  });
+  if(matches.length === 0){
+    foodResults.innerHTML = '<div style="padding:4px;color:#999">該当なし</div>';
+    return;
+  }
+  matches.forEach(m=>{
+    const div = document.createElement('div');
+    div.className = 'result-item';
+    div.innerHTML = `<span style="color:${COLORS[m.nutrient.subCategory].bg}">●</span> <strong>${m.nutrient.name}</strong> ← ${m.food.name} (${m.food.amount})`;
+    div.addEventListener('click', ()=>{
+      const node = cy.getElementById(m.nutrient.id);
+      node.select();
+      cy.animate({center:{eles:node},zoom:1.5,duration:400});
+      highlightNode(m.nutrient.id);
+      showDetail(m.nutrient.id);
+    });
+    foodResults.appendChild(div);
+  });
+});
+
+// ============================================================
+// REVERSE LOOKUP: Symptom → Nutrients
+// ============================================================
+const symptomSearchBtn = document.getElementById('symptomSearchBtn');
+const symptomSearchInput = document.getElementById('symptomSearchInput');
+const symptomResults = document.getElementById('symptomResults');
+
+symptomSearchBtn.addEventListener('click', ()=>{
+  symptomSearchInput.classList.toggle('show');
+  symptomSearchBtn.classList.toggle('active');
+  if(!symptomSearchInput.classList.contains('show')){
+    symptomSearchInput.value='';symptomResults.innerHTML='';
+  } else {
+    symptomSearchInput.focus();
+  }
+});
+
+symptomSearchInput.addEventListener('input', ()=>{
+  const q = symptomSearchInput.value.trim().toLowerCase();
+  symptomResults.innerHTML = '';
+  if(!q) return;
+  const matches = [];
+  nutrients.forEach(n=>{
+    const defMatch = n.deficiency.toLowerCase().includes(q);
+    const exMatch = n.excess.toLowerCase().includes(q);
+    if(defMatch) matches.push({nutrient:n, type:'欠乏', text:n.deficiency});
+    if(exMatch) matches.push({nutrient:n, type:'過剰', text:n.excess});
+  });
+  if(matches.length === 0){
+    symptomResults.innerHTML = '<div style="padding:4px;color:#999">該当なし</div>';
+    return;
+  }
+  matches.forEach(m=>{
+    const div = document.createElement('div');
+    div.className = 'result-item';
+    const typeColor = m.type === '欠乏' ? '#e65100' : '#c62828';
+    div.innerHTML = `<span style="color:${COLORS[m.nutrient.subCategory].bg}">●</span> <strong>${m.nutrient.name}</strong> <span style="color:${typeColor};font-size:10px">[${m.type}]</span>`;
+    div.addEventListener('click', ()=>{
+      const node = cy.getElementById(m.nutrient.id);
+      node.select();
+      cy.animate({center:{eles:node},zoom:1.5,duration:400});
+      highlightNode(m.nutrient.id);
+      showDetail(m.nutrient.id);
+    });
+    symptomResults.appendChild(div);
+  });
+});
+</script>
+</body>
+</html>
