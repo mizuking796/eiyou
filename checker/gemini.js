@@ -24,12 +24,16 @@ async function callGemini(prompt, imageBase64) {
   const apiVer = model.startsWith('gemini-1.') ? 'v1' : 'v1beta';
   const url = `https://generativelanguage.googleapis.com/${apiVer}/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
+  // v1beta(2.0系)はresponseMimeType対応、v1(1.5系)は非対応
+  const genConfig = {temperature:0.2};
+  if (apiVer === 'v1beta') genConfig.responseMimeType = 'application/json';
+
   const resp = await fetch(url, {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
       contents: [{parts}],
-      generationConfig: {responseMimeType:'application/json', temperature:0.2}
+      generationConfig: genConfig
     })
   });
 
@@ -56,8 +60,11 @@ async function callGemini(prompt, imageBase64) {
     throw new Error('BLOCKED:' + reason);
   }
 
-  const text = data.candidates[0]?.content?.parts?.[0]?.text;
+  let text = data.candidates[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error('EMPTY_RESPONSE');
+
+  // markdownコードブロック(```json ... ```)を除去
+  text = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
 
   return JSON.parse(text);
 }
